@@ -1,6 +1,7 @@
 from collections import defaultdict
 from scipy.io import mmread
 import graph_bfs
+import time
 
 
 class Graph:
@@ -88,7 +89,6 @@ class Graph:
 
                 # do bfs and find a strongly connected component
                 scvc = self.bfs(vc, c)
-                #print(scvc)
                 self.scc.append(scvc)
                 self.SCC_counter = self.SCC_counter + 1
 
@@ -118,8 +118,9 @@ class Graph:
 # print(g.SCC_counter)
 
 
-#a = mmread('celegansneural.mtx')
-a = mmread('foldoc.mtx')
+a = mmread('celegansneural.mtx')
+#a = mmread('foldoc.mtx')
+#a = mmread('EAT_RS.mtx')
 size = a.shape[0]
 g = Graph(size)
 
@@ -129,8 +130,12 @@ for i, j, v in zip(a.row, a.col, a.data):
 
 print(g.V)
 
+start = time.time()
 g.color_scc()
+print("Result:")
 print(g.SCC_counter)
+end = time.time()
+print("Time:" + str(end - start))
 
 
 
