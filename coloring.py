@@ -37,25 +37,29 @@ class Graph:
         return unique_colors
 
     def bfs(self, vc, c):
-        g_bfs = graph_bfs.GraphBFS(len(vc))
+        g_bfs = graph_bfs.GraphBFS(c+1)
         for end in self.graph:
             if end in vc:
                 for start in self.graph[end]:
-                    g_bfs.add_edge(end, start)
+                    if start in vc:
+                        g_bfs.add_edge(end, start)
 
         return g_bfs.bfs(c)
 
     def delete_found_scc(self, scvc):
         for v in scvc:
-            self.graph.pop(v)
-            self.V = self.V - 1
+            if v in self.graph:
+                self.graph.pop(v)
+                self.V = self.V - 1
 
-        for end in self.graph:
+        for end in list(self.graph):
             start_list = self.graph[end]
-            for i in range(len(start_list)):
-                if start_list[i] in scvc:
-                    start_list.pop(i)
-                    i = i - 1
+            index = 0
+            while index < len(start_list):
+                if start_list[index] in scvc:
+                    start_list.pop(index)
+                    index = index - 1
+                index = index + 1
 
     def color_scc(self):
         while self.V:
@@ -84,7 +88,7 @@ class Graph:
 
                 # do bfs and find a strongly connected component
                 scvc = self.bfs(vc, c)
-                print(scvc)
+                #print(scvc)
                 self.scc.append(scvc)
                 self.SCC_counter = self.SCC_counter + 1
 
@@ -92,23 +96,40 @@ class Graph:
                 self.delete_found_scc(scvc)
 
 
-g = Graph(8)
-g.add_edge(0, 1)
-g.add_edge(1, 2)
-g.add_edge(2, 3)
-g.add_edge(2, 4)
-g.add_edge(3, 0)
-g.add_edge(4, 5)
-g.add_edge(5, 6)
-g.add_edge(6, 4)
-g.add_edge(6, 7)
+# g = Graph(8)
+# g.add_edge(0, 1)
+# g.add_edge(1, 2)
+# g.add_edge(2, 3)
+# g.add_edge(2, 4)
+# g.add_edge(3, 0)
+# g.add_edge(4, 5)
+# g.add_edge(5, 6)
+# g.add_edge(6, 4)
+# g.add_edge(6, 7)
+#
+# print(g.graph)
+# print(g.vertex_color)
+#
+# g.color_scc()
+#
+# print(g.graph)
+# print(g.vertex_color)
+# print(g.scc)
+# print(g.SCC_counter)
+
+
+#a = mmread('celegansneural.mtx')
+a = mmread('foldoc.mtx')
+size = a.shape[0]
+g = Graph(size)
+
+for i, j, v in zip(a.row, a.col, a.data):
+    if v != 0:
+        g.add_edge(i, j)
+
+print(g.V)
 
 g.color_scc()
-
-print(g.graph)
-print(g.vertex_color)
-print(g.V)
-print(g.scc)
 print(g.SCC_counter)
 
 
