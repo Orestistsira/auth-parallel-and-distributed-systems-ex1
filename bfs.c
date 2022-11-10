@@ -79,8 +79,8 @@ SccList* bfs(Graph* g, int s){
     queueInit(queue, n);
     queuePush(queue, s);
     
-    int index = getIndexOfValue(g->vertexes, n, s);
-    visited[index] = true;
+    int indexOfVertex = getIndexOfValue(g->vertexes, n, s);
+    visited[indexOfVertex] = true;
 
     SccList* sccList = (SccList*) malloc(sizeof(SccList));
     sccList->arr = (int*) malloc(n * sizeof(int));
@@ -92,12 +92,13 @@ SccList* bfs(Graph* g, int s){
         sccList->arr[sccList->length] = s;
         sccList->length++;
 
-        index = getIndexOfValue(g->start, g->startLength, s);
+        int index = getIndexOfValue(g->start, g->startLength, s);
         for(int i=g->startPointer[index];i<g->startPointer[index+1];i++){
-            int value = getIndexOfValue(g->vertexes, n, g->end[i]);
-            if(visited[value] == false){
-                queuePush(queue, g->vertexes[value]);
-                visited[value] = true;
+            indexOfVertex = getIndexOfValue(g->vertexes, n, g->end[i]);
+
+            if(visited[indexOfVertex] == false){
+                queuePush(queue, g->vertexes[indexOfVertex]);
+                visited[indexOfVertex] = true;
             }
         }
     }
