@@ -20,15 +20,49 @@ class Graph:
         if v not in self.vertex_color:
             self.vertex_color[v] = v
 
+    def init_colors(self):
+        # Color each node with its id
+        self.vertex_color = defaultdict(int)
+        for end in self.graph:
+            self.add_vertex_color(end)
+            for start in self.graph[end]:
+                self.add_vertex_color(start)
+
+    def find_unique_colors(self):
+        unique_colors = list()
+        for v in self.vertex_color:
+            color = self.vertex_color[v]
+            if color not in unique_colors:
+                unique_colors.append(color)
+        return unique_colors
+
+    def bfs(self, vc, c):
+        g_bfs = graph_bfs.GraphBFS(len(vc))
+        for end in self.graph:
+            if end in vc:
+                for start in self.graph[end]:
+                    g_bfs.add_edge(end, start)
+
+        return g_bfs.bfs(c)
+
+    def delete_found_scc(self, scvc):
+        for v in scvc:
+            self.graph.pop(v)
+            self.V = self.V - 1
+
+        for end in self.graph:
+            start_list = self.graph[end]
+            for i in range(len(start_list)):
+                if start_list[i] in scvc:
+                    start_list.pop(i)
+                    i = i - 1
+
     def color_scc(self):
         while self.V:
-            # Color each node with its id
-            self.vertex_color = defaultdict(int)
-            for end in self.graph:
-                self.add_vertex_color(end)
-                for start in self.graph[end]:
-                    self.add_vertex_color(start)
+            # init vertex_color
+            self.init_colors()
 
+            # spread vertex color fw until there are no changes in vertex_color
             changed_color = True
             while changed_color:
                 changed_color = False
@@ -38,40 +72,24 @@ class Graph:
                             self.vertex_color[v] = self.vertex_color[u]
                             changed_color = True
 
-            unique_colors = list()
-            for v in self.vertex_color:
-                color = self.vertex_color[v]
-                if color not in unique_colors:
-                    unique_colors.append(color)
+            # find all unique colors left in vertex_color
+            unique_colors = self.find_unique_colors()
 
             for c in unique_colors:
+                # find all vertexes with color c and put them in vc
                 vc = list()
                 for v in self.vertex_color:
                     if self.vertex_color[v] == c:
                         vc.append(v)
 
-                g_bfs = graph_bfs.GraphBFS(len(vc))
-                for end in self.graph:
-                    if end in vc:
-                        for start in self.graph[end]:
-                            g_bfs.add_edge(end, start)
-
-                scvs = g_bfs.bfs(c)
-                print(scvs)
-                self.scc.append(scvs)
+                # do bfs and find a strongly connected component
+                scvc = self.bfs(vc, c)
+                print(scvc)
+                self.scc.append(scvc)
                 self.SCC_counter = self.SCC_counter + 1
 
-                # delete all items in scvs
-                for v in scvs:
-                    self.graph.pop(v)
-                    self.V = self.V - 1
-
-                for end in self.graph:
-                    l = self.graph[end]
-                    for i in range(len(l)):
-                        if l[i] in scvs:
-                            l.pop(i)
-                            i = i - 1
+                # delete all items found in scvc
+                self.delete_found_scc(scvc)
 
 
 g = Graph(8)
