@@ -61,15 +61,15 @@ class Graph:
 
         print("Conter: " + str(self.counter))
 
+
 a = mmread('celegansneural.mtx')
-array = a.toarray()
-size = len(array)
+#a = mmread('foldoc.mtx')
+size = a.shape[0]
 g = Graph(size)
 
-for i in range(0, size):
-    for j in range(0, size):
-        if array[i][j] != 0:
-            g.add_edge(i, j)
+for i, j, v in zip(a.row, a.col, a.data):
+    if v != 0:
+        g.add_edge(i, j)
 
 
 print("Strongly Connected Components:")
