@@ -1,61 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <limits.h>
-
-typedef struct Graph{
-    int* vertexes;
-    int* startPointer; //shows where start values go
-
-    int* end;
-    int* start; 
-
-    int numOfVertexes;
-    int endLength;
-    int startLength;
-
-}Graph;
-
-typedef struct Queue{
-    int* arr;
-    int qSize;
-    int qStart;
-    int qEnd;
-}Queue;
-
-typedef struct SccList{
-    int* arr;
-    int length;
-}SccList;
-
-void queueInit(Queue* queue, int size){
-    queue->qSize = size;
-    queue->arr = (int*) malloc(queue->qSize * sizeof(int));
-    queue->qStart = 0;
-    queue->qEnd = 0;
-}
-
-void queuePush(Queue* queue, int val){
-    queue->arr[queue->qEnd] = val;
-    queue->qEnd++;
-    if(queue->qEnd == queue->qSize)
-        queue->qEnd = 0;
-}
-
-int queuePop(Queue* queue){
-    int val = queue->arr[queue->qStart];
-    queue->qStart++;
-    if(queue->qStart == queue->qSize)
-        queue->qStart = 0;
-    return val;
-}
-
-void printArray(int* array, int n){
-    for(int i=0;i<n;i++){
-        printf("%d ", array[i]);
-    }
-    printf("\n");
-}
+#include "bfs.h"
 
 int getIndexOfValue(int* array, int n, int value){
     for(int i=0;i<n;i++){
@@ -67,19 +10,22 @@ int getIndexOfValue(int* array, int n, int value){
 }
 
 SccList* bfs(Graph* g, int s){
-    int n = g->numOfVertexes;
+    int n = g->numOfVertices;
     //For each vertex
     bool visited[n];
 
+    //Mark all vertices as not visited
     for(int i=0;i<n;i++){
         visited[i] = false;
     }
 
+    //Create a queue for bfs
     Queue* queue = (Queue*) malloc(sizeof(Queue));
     queueInit(queue, n);
     queuePush(queue, s);
-    
-    int indexOfVertex = getIndexOfValue(g->vertexes, n, s);
+
+    //Mark source vertex as visited
+    int indexOfVertex = getIndexOfValue(g->vertices, n, s);
     visited[indexOfVertex] = true;
 
     SccList* sccList = (SccList*) malloc(sizeof(SccList));
@@ -87,48 +33,24 @@ SccList* bfs(Graph* g, int s){
     sccList->length = 0;
 
     while(queue->qStart != queue->qEnd){
+        //Dequeue the first vertex from queue
         s = queuePop(queue);
 
+        //Put the vertex id on the ssc list
         sccList->arr[sccList->length] = s;
         sccList->length++;
 
+        //Get all the adjacent vertices of s and enqueue them if not visited
         int index = getIndexOfValue(g->start, g->startLength, s);
         for(int i=g->startPointer[index];i<g->startPointer[index+1];i++){
-            indexOfVertex = getIndexOfValue(g->vertexes, n, g->end[i]);
+            indexOfVertex = getIndexOfValue(g->vertices, n, g->end[i]);
 
             if(visited[indexOfVertex] == false){
-                queuePush(queue, g->vertexes[indexOfVertex]);
+                queuePush(queue, g->vertices[indexOfVertex]);
                 visited[indexOfVertex] = true;
             }
         }
     }
 
     return sccList;
-}
-
-int main(int argc, char** argv){
-    Graph* g = (Graph*) malloc(sizeof(Graph));
-
-    g->numOfVertexes = 4;
-    g->endLength = 6;
-    g->startLength = 4;
-
-    
-    g->end = (int[6]){1, 2, 2, 0, 3, 3};
-    g->start = (int[4]){0, 1, 2, 3};
-    g->startPointer = (int[4]){0, 2, 3, 5};
-    g->vertexes = (int[4]){0, 1, 2, 3};
-
-    printArray(g->end, g->endLength);
-    printArray(g->start, g->startLength);
-
-    SccList* sccList = bfs(g, 2);
-
-    printf("Result:");
-    printArray(sccList->arr, sccList->length);
-
-    free(g);
-    free(sccList);
-
-    return 0;
 }
