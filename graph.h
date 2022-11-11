@@ -11,6 +11,7 @@ typedef struct Graph{
     int numOfVertices;
     int endLength;
     int startLength;
+    int startPointerLength;
 
 }Graph;
 
