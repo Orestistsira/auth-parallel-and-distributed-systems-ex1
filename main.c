@@ -32,8 +32,8 @@ int main(int argc, char** argv){
     printArray(g->end, g->endLength);
     printArray(g->start, g->startLength);
 
-    bfsTest(g);
-    
+    //bfsTest(g);
+
     free(g);
 
     return 0;
