@@ -187,9 +187,9 @@ int main(int argc, char** argv){
     printArray(g->startPointer, g->startPointerLength);
     printf("---------------------------------------------------------------------------------------\n");
     printArray(g->vertices, g->numOfVertices);
-    printf("Nov=%d\n", g->numOfVertices);
+    printf("NoV=%d\n", g->numOfVertices);
 
-    bfsTest(g, 7);
+    bfsTest(g, 103);
 
     //free(g);
     free(g);

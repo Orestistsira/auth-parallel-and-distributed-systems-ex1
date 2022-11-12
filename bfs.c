@@ -47,6 +47,10 @@ SccList* bfs(Graph* g, int s){
         if(index != -1){
             for(int i=g->startPointer[index];i<g->startPointer[index+1];i++){
                 indexOfVertex = getIndexOfValue(g->vertices, n, g->end[i]);
+                if(indexOfVertex == -1){
+                    printf("Error: Vertex with id=%d not found", g->end[i]);
+                    exit(1);
+                }
 
                 if(visited[indexOfVertex] == false){
                     queuePush(queue, g->vertices[g->end[i]]);
