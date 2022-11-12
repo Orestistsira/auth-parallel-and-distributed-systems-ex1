@@ -176,8 +176,8 @@ int main(int argc, char** argv){
     ca->jLength = 9;
     ca->numOfVertices = 8;
 
-    ca = NULL;
-    ca = readMtxFile("graphs/celegansneural.mtx");
+    //ca = NULL;
+    //ca = readMtxFile("graphs/celegansneural.mtx");
     Graph* g = initGraphFromCoo(ca);
     
     printArray(g->end, g->endLength);
@@ -189,7 +189,7 @@ int main(int argc, char** argv){
     printArray(g->vertices, g->numOfVertices);
     printf("NoV=%d\n", g->numOfVertices);
 
-    bfsTest(g, 103);
+    bfsTest(g, 0);
 
     //free(g);
     free(g);
