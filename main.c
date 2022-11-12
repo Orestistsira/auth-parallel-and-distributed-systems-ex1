@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "bfs.h"
 #include "mmio.h"
 
@@ -7,6 +9,7 @@ typedef struct CooArray{
 
     int iLength;
     int jLength;
+    int numOfVertices;
 }CooArray;
 
 void printArray(int* array, int n){
@@ -16,8 +19,28 @@ void printArray(int* array, int n){
     printf("\n");
 }
 
-void bfsTest(Graph* g){
-    SccList* sccList = bfs(g, 2);
+void resizeArray(int* arr, int newSize){
+    int* temp = (int*) realloc(arr, newSize * sizeof(int));
+    arr = temp;
+}
+
+int* copyArray(int* arr, int size){
+    int* temp = (int*) malloc(size * sizeof(int));
+    if(temp != NULL)
+        memcpy(temp, arr, size * sizeof(int));
+    return temp;
+}
+
+bool notInArray(int* arr, int size, int value){
+    for(int i=0;i<size;i++){
+        if(arr[i] == value)
+            return false;
+    }
+    return true;
+}
+
+void bfsTest(Graph* g, int source){
+    SccList* sccList = bfs(g, source);
 
     printf("Result: ");
     printArray(sccList->arr, sccList->length);
@@ -92,6 +115,7 @@ CooArray* readMtxFile(char* file){
     cooArray->j = J;
     cooArray->iLength = nz;
     cooArray->jLength = nz;
+    cooArray->numOfVertices = M;
 
 	return cooArray;
 }
@@ -101,10 +125,14 @@ Graph* initGraphFromCoo(CooArray* ca){
     g->end = ca->i;
     g->endLength = ca->iLength;
 
+    //Malloc to size jLength because we dont know the final size
     g->start = (int*) malloc(ca->jLength * sizeof(int));
     g->startLength = 0;
     g->startPointer = (int*) malloc(ca->jLength * sizeof(int));
     g->startPointerLength = 0;
+
+    g->vertices = (int*) malloc(ca->numOfVertices * sizeof(int));
+    g->numOfVertices = 0;
 
     int vid = -1;
     for(int index=0;index<ca->jLength;index++){
@@ -114,45 +142,56 @@ Graph* initGraphFromCoo(CooArray* ca){
             g->startLength++;
             g->startPointer[g->startPointerLength] = index;
             g->startPointerLength++;
+
+            g->vertices[g->numOfVertices] = vid;
+            g->numOfVertices++;
         }
     }
+
+    //Get all remaining vertices
+    if(g->numOfVertices != ca->numOfVertices){
+        for(int i=0;i<g->endLength;i++){
+            if(notInArray(g->vertices, g->numOfVertices, g->end[i])){
+                g->vertices[g->numOfVertices] = g->end[i];
+                g->numOfVertices++;
+            }
+        }
+    }
+
     free(ca);
+
+    //Resize arrays to their length
+    resizeArray(g->start, g->startLength);
+    resizeArray(g->startPointer, g->startPointerLength);
 
     return g;
 }
 
 int main(int argc, char** argv){
-    Graph* g = (Graph*) malloc(sizeof(Graph));
+    CooArray* ca = (CooArray*) malloc(sizeof(CooArray));
 
-    g->numOfVertices = 4;
-    g->endLength = 6;
-    g->startLength = 4;
+    ca->i = (int[9]){1, 2, 3, 4, 0, 5, 6, 4, 7};
+    ca->iLength = 9;
+    ca->j = (int[9]){0, 1, 2, 2, 3, 4, 5, 6, 6};
+    ca->jLength = 9;
+    ca->numOfVertices = 8;
 
-    //Init Graph
-    g->end = (int[6]){1, 2, 2, 0, 3, 3};
-    g->start = (int[4]){0, 1, 2, 3};
-    g->startPointer = (int[4]){0, 2, 3, 5};
-    g->vertices = (int[4]){0, 1, 2, 3};
-
-    printArray(g->end, g->endLength);
-    printArray(g->start, g->startLength);
-
-    //bfsTest(g);
-    CooArray* ca = readMtxFile("graphs/celegansneural.mtx");
-    printf("%d\n", ca->iLength);
-    printf("%d\n", ca->jLength);
-
-    //printArray(ca->i, ca->iLength);
-    //printArray(ca->j, ca->jLength);
-
-    Graph* g1 = initGraphFromCoo(ca);
+    ca = NULL;
+    ca = readMtxFile("graphs/celegansneural.mtx");
+    Graph* g = initGraphFromCoo(ca);
     
-    printArray(g1->end, g1->endLength);
+    printArray(g->end, g->endLength);
     printf("---------------------------------------------------------------------------------------\n");
-    printArray(g1->start, g1->startLength);
+    printArray(g->start, g->startLength);
     printf("---------------------------------------------------------------------------------------\n");
-    printArray(g1->startPointer, g1->startPointerLength);
+    printArray(g->startPointer, g->startPointerLength);
+    printf("---------------------------------------------------------------------------------------\n");
+    printArray(g->vertices, g->numOfVertices);
+    printf("Nov=%d\n", g->numOfVertices);
 
+    bfsTest(g, 7);
+
+    //free(g);
     free(g);
 
     return 0;

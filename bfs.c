@@ -3,9 +3,10 @@
 int getIndexOfValue(int* array, int n, int value){
     for(int i=0;i<n;i++){
         if(array[i] == value){
-            return value;
+            return i;
         }
     }
+    printf("Index for value %d not found\n", value);
     return -1;
 }
 
@@ -42,12 +43,15 @@ SccList* bfs(Graph* g, int s){
 
         //Get all the adjacent vertices of s and enqueue them if not visited
         int index = getIndexOfValue(g->start, g->startLength, s);
-        for(int i=g->startPointer[index];i<g->startPointer[index+1];i++){
-            indexOfVertex = getIndexOfValue(g->vertices, n, g->end[i]);
+        //if vertex is a start of an edge
+        if(index != -1){
+            for(int i=g->startPointer[index];i<g->startPointer[index+1];i++){
+                indexOfVertex = getIndexOfValue(g->vertices, n, g->end[i]);
 
-            if(visited[indexOfVertex] == false){
-                queuePush(queue, g->vertices[indexOfVertex]);
-                visited[indexOfVertex] = true;
+                if(visited[indexOfVertex] == false){
+                    queuePush(queue, g->vertices[g->end[i]]);
+                    visited[indexOfVertex] = true;
+                }
             }
         }
     }
