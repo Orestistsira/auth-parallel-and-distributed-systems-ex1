@@ -396,12 +396,10 @@ int main(int argc, char** argv){
     //ca = readMtxFile("graphs/foldoc.mtx");
     Graph* g = initGraphFromCoo(ca);
     printGraph(g);
- 
-    //bfsTest(g, 4);
+
     int numOfScc = colorScc(g);
     printf("%d\n", numOfScc);
 
-    //free(g);
     free(g);
 
     return 0;
