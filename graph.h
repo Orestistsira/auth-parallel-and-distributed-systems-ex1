@@ -3,8 +3,8 @@
 
 typedef struct Graph{
     int* vertices;
-    int* startPointer; //shows where start values go
 
+    int* startPointer; //points to where start values begin
     int* end;
     int* start;
 
@@ -15,6 +15,6 @@ typedef struct Graph{
 
 }Graph;
 
-void deleteIndexfromArray(int*arr, int* size, int index);
+void deleteIndexfromArray(int*arr, int size, int index);
 
-void deleteVertexFromGraph(Graph* g, int vid);
+void deleteVertexFromGraph(Graph* g, int* vertexColor, int vid);

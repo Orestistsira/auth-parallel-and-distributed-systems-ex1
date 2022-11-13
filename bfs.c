@@ -6,11 +6,11 @@ int getIndexOfValue(int* array, int n, int value){
             return i;
         }
     }
-    printf("Index for value %d not found\n", value);
+    //printf("Index for value %d not found\n", value);
     return -1;
 }
 
-SccList* bfs(Graph* g, int s){
+Array* bfs(Graph* g, int s){
     int n = g->numOfVertices;
     //For each vertex
     bool visited[n];
@@ -29,7 +29,7 @@ SccList* bfs(Graph* g, int s){
     int indexOfVertex = getIndexOfValue(g->vertices, n, s);
     visited[indexOfVertex] = true;
 
-    SccList* sccList = (SccList*) malloc(sizeof(SccList));
+    Array* sccList = (Array*) malloc(sizeof(Array));
     sccList->arr = (int*) malloc(n * sizeof(int));
     sccList->length = 0;
 
@@ -42,18 +42,23 @@ SccList* bfs(Graph* g, int s){
         sccList->length++;
 
         //Get all the adjacent vertices of s and enqueue them if not visited
-        int index = getIndexOfValue(g->start, g->startLength, s);
+        int startIndex = getIndexOfValue(g->start, g->startLength, s);
+        // printf("Vid=%d\n", s);
+        // printf("Start index=%d\n", startIndex);
+
         //if vertex is a start of an edge
-        if(index != -1){
-            for(int i=g->startPointer[index];i<g->startPointer[index+1];i++){
-                indexOfVertex = getIndexOfValue(g->vertices, n, g->end[i]);
+        if(startIndex != -1){
+            int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
+
+            for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
+                indexOfVertex = getIndexOfValue(g->vertices, n, g->end[endIndex]);
                 if(indexOfVertex == -1){
-                    printf("Error: Vertex with id=%d not found", g->end[i]);
+                    //printf("Error: Vertex with id=%d not found", g->end[endIndex]);
                     exit(1);
                 }
 
                 if(visited[indexOfVertex] == false){
-                    queuePush(queue, g->vertices[g->end[i]]);
+                    queuePush(queue, g->vertices[indexOfVertex]);
                     visited[indexOfVertex] = true;
                 }
             }

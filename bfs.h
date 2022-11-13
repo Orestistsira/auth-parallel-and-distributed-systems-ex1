@@ -5,11 +5,11 @@
 #include "queue.h"
 #include "graph.h"
 
-typedef struct SccList{
+typedef struct Array{
     int* arr;
     int length;
-}SccList;
+}Array;
 
 int getIndexOfValue(int* array, int n, int value);
 
-SccList* bfs(Graph* g, int s);
+Array* bfs(Graph* g, int s);
