@@ -12,8 +12,9 @@ void deleteVertexFromGraph(Graph* g, int* vertexColor, int vid){
             if(g->vertices[i] == vid){
                 deleteIndexfromArray(g->vertices, g->numOfVertices, i);
                 deleteIndexfromArray(vertexColor, g->numOfVertices, i);
-                i--;
                 g->numOfVertices--;
+
+                return;
             }
         }
     }

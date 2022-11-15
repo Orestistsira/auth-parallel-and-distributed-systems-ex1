@@ -10,6 +10,11 @@ int getIndexOfValue(int* array, int n, int value){
     return -1;
 }
 
+void resizeArray(int* arr, int newSize){
+    int* temp = (int*) realloc(arr, newSize * sizeof(int));
+    arr = temp;
+}
+
 Array* bfs(Graph* g, int s){
     int n = g->numOfVertices;
     //For each vertex
@@ -43,8 +48,6 @@ Array* bfs(Graph* g, int s){
 
         //Get all the adjacent vertices of s and enqueue them if not visited
         int startIndex = getIndexOfValue(g->start, g->startLength, s);
-        // printf("Vid=%d\n", s);
-        // printf("Start index=%d\n", startIndex);
 
         //if vertex is a start of an edge
         if(startIndex != -1){
@@ -53,8 +56,8 @@ Array* bfs(Graph* g, int s){
             for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
                 indexOfVertex = getIndexOfValue(g->vertices, n, g->end[endIndex]);
                 if(indexOfVertex == -1){
-                    //printf("Error: Vertex with id=%d not found", g->end[endIndex]);
-                    exit(1);
+                    printf("Error: Vertex with id=%d not found", g->end[endIndex]);
+                    continue;
                 }
 
                 if(visited[indexOfVertex] == false){
@@ -64,6 +67,8 @@ Array* bfs(Graph* g, int s){
             }
         }
     }
+
+    resizeArray(sccList->arr, sccList->length);
 
     return sccList;
 }

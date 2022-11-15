@@ -12,4 +12,6 @@ typedef struct Array{
 
 int getIndexOfValue(int* array, int n, int value);
 
+void resizeArray(int* arr, int newSize);
+
 Array* bfs(Graph* g, int s);
