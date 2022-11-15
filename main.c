@@ -113,6 +113,12 @@ CooArray* readMtxFile(char* file){
         J[i]--;
     }
 
+    // for(i=0; i<nz; i++){
+    //     fscanf(f, "%d %d\n", &I[i], &J[i]);
+    //     I[i]--;  /* adjust from 1-based to 0-based */
+    //     J[i]--;
+    // }
+
     if (f !=stdin) fclose(f);
 
     /************************/
@@ -124,6 +130,10 @@ CooArray* readMtxFile(char* file){
     for(i=0; i<nz; i++){
         fprintf(stdout, "%d %d %20.19g\n", I[i]+1, J[i]+1, val[i]);
     }
+
+    // for(i=0; i<nz; i++){
+    //     fprintf(stdout, "%d %d\n", I[i]+1, J[i]+1);
+    // }
 
     CooArray* cooArray = (CooArray*) malloc(sizeof(CooArray));
     cooArray->i = I;
@@ -137,17 +147,6 @@ CooArray* readMtxFile(char* file){
 
 int trimGraph(Graph* g){
     int sccCounter = 0;
-
-    // for(int i=0;i<g->startLength;i++){
-    //     int vid = g->start[i];
-
-    //     if(notInArray(g->end, g->endLength, vid)){
-    //         deleteVertexFromGraph(g, g->vertices, vid);
-    //         sccCounter++;
-    //     }
-    // }
-
-    //check if vid not in start again
 
     for(int i=0;i<g->numOfVertices;i++){
         int vid = g->vertices[i];
@@ -466,11 +465,11 @@ int main(int argc, char** argv){
     //ca = readMtxFile("graphs/celegansneural.mtx");
     ca = readMtxFile("graphs/foldoc.mtx");
     //ca = readMtxFile("graphs/language.mtx");
+    //ca = readMtxFile("graphs/eu-2005.mtx");
     Graph* g = initGraphFromCoo(ca);
     //printGraph(g);
 
     time_t start, stop;
-
     start = time(NULL);
 
     int numOfScc = colorScc(g);
