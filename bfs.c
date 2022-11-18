@@ -38,7 +38,7 @@ void resizeArray(int* arr, int newSize){
 }
 
 Array* bfs(Graph* g, int s){
-    int n = g->numOfVertices;
+    int n = g->verticesLength;
     //For each vertex
     bool visited[n];
 

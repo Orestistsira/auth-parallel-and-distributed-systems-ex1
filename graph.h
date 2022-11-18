@@ -8,13 +8,16 @@ typedef struct Graph{
     int* end;
     int* start;
 
-    int numOfVertices;
+    int verticesLength;
     int endLength;
     int startLength;
     int startPointerLength;
 
+    //number of vertices not -1
+    int numOfVertices;
+
 }Graph;
 
-void deleteIndexfromArray(int*arr, int size, int index);
+void deleteIndexfromArray(int*arr, int index);
 
 void deleteVertexFromGraph(Graph* g, int* vertexColor, int vid);

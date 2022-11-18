@@ -15,8 +15,8 @@ void printGraph(Graph* g){
     printf("Start Pointer------------------------------------------------------------------------------\n");
     printArray(g->startPointer, g->startPointerLength);
     printf("Vertices-----------------------------------------------------------------------------------\n");
-    printArray(g->vertices, g->numOfVertices);
-    printf("NoV=%d\n", g->numOfVertices);
+    printArray(g->vertices, g->verticesLength);
+    printf("NoV=%d\n", g->verticesLength);
     printf("\n");
 }
 
@@ -44,10 +44,15 @@ void bfsTest(Graph* g, int source){
     free(sccList);
 }
 
+void readBanner(){
+    
+}
+
 CooArray* readMtxFile(char* filename){
     int ret_code;
     MM_typecode matcode;
     FILE *f;
+    fpos_t pos;
     int M, N, nz;   
     int i, *I, *J;
     double* val;
@@ -56,8 +61,8 @@ CooArray* readMtxFile(char* filename){
     strcpy(filepath, "graphs/");
     strcat(filepath, filename);
     strcat(filepath, ".mtx");
-    //char* filepath = "graphs/" + filename + ".mtx";
 
+    int numOfCols = 1;
     if ((f = fopen(filepath, "r")) == NULL){
         printf("File with name <%s> not found in graphs/", filename);
         exit(1);
@@ -67,7 +72,6 @@ CooArray* readMtxFile(char* filename){
         printf("Could not process Matrix Market banner.\n");
         exit(1);
     }
-
 
     /*  This is how one can screen matrix types if their application */
     /*  only supports a subset of the Matrix Market data types.      */
@@ -84,8 +88,21 @@ CooArray* readMtxFile(char* filename){
         exit(1);
     }
 
-    /* reseve memory for matrices */
+    fgetpos(f, &pos);
+    char str[150];
+    fgets(str,150, f);
+    printf("%s\n", str);
 
+    i=0;
+    while(i<=str[i]){
+        if(str[i]==' '){
+            numOfCols++;
+        }
+        i++;
+    }
+    fsetpos(f, &pos);
+
+    /* reseve memory for matrices */
     I = (int*) malloc(nz * sizeof(int));
     J = (int*) malloc(nz * sizeof(int));
     val = (double *) malloc(nz * sizeof(double));
@@ -95,33 +112,44 @@ CooArray* readMtxFile(char* filename){
     /*   specifier as in "%lg", "%lf", "%le", otherwise errors will occur */
     /*  (ANSI C X3.159-1989, Sec. 4.9.6.2, p. 136 lines 13-15)            */
 
-    for(i=0; i<nz; i++){
-        fscanf(f, "%d %d %lg\n", &I[i], &J[i], &val[i]);
-        I[i]--;  /* adjust from 1-based to 0-based */
-        J[i]--;
+    if(numOfCols == 3){
+        //For weighted graphs
+        for(i=0; i<nz; i++){
+            fscanf(f, "%d %d %lg\n", &I[i], &J[i], &val[i]);
+            I[i]--;  /* adjust from 1-based to 0-based */
+            J[i]--;
+        }
+
+        if (f !=stdin) fclose(f);
+
+        /************************/
+        /* now write out matrix */
+        /************************/
+
+        mm_write_banner(stdout, matcode);
+        mm_write_mtx_crd_size(stdout, M, N, nz);
+        for(i=0; i<nz; i++){
+            fprintf(stdout, "%d %d %20.19g\n", I[i]+1, J[i]+1, val[i]);
+        }
     }
+    else if(numOfCols == 2){
+        //For unweighted graphs
+        for(i=0; i<nz; i++){
+            fscanf(f, "%d %d\n", &I[i], &J[i]);
+            I[i]--;  /* adjust from 1-based to 0-based */
+            J[i]--;
+        }
 
-    // for(i=0; i<nz; i++){
-    //     fscanf(f, "%d %d\n", &I[i], &J[i]);
-    //     I[i]--;  /* adjust from 1-based to 0-based */
-    //     J[i]--;
-    // }
+        if (f !=stdin) fclose(f);
 
-    if (f !=stdin) fclose(f);
-
-    /************************/
-    /* now write out matrix */
-    /************************/
-
-    mm_write_banner(stdout, matcode);
-    mm_write_mtx_crd_size(stdout, M, N, nz);
-    for(i=0; i<nz; i++){
-        fprintf(stdout, "%d %d %20.19g\n", I[i]+1, J[i]+1, val[i]);
+        for(i=0; i<nz; i++){
+            fprintf(stdout, "%d %d\n", I[i]+1, J[i]+1);
+        }
     }
-
-    // for(i=0; i<nz; i++){
-    //     fprintf(stdout, "%d %d\n", I[i]+1, J[i]+1);
-    // }
+    else{
+        printf("Error: Number of columns not 2 or 3!\n");
+        exit(1);
+    }
 
     CooArray* cooArray = (CooArray*) malloc(sizeof(CooArray));
     cooArray->i = I;
@@ -136,7 +164,7 @@ CooArray* readMtxFile(char* filename){
 int trimGraph(Graph* g){
     int sccCounter = 0;
 
-    for(int i=0;i<g->numOfVertices;i++){
+    for(int i=0;i<g->verticesLength;i++){
         int vid = g->vertices[i];
 
         int timesFoundInStart = 0;
@@ -158,14 +186,15 @@ int trimGraph(Graph* g){
         if(timesFoundInEnd == 0 || timesFoundInStart == 0){
             printf("Trimming vertex: %d\n", vid);
             //deleteVertexFromGraph(g, g->vertices, vid);
-            deleteIndexfromArray(g->vertices, g->numOfVertices, i);
+            deleteIndexfromArray(g->vertices, i);
             sccCounter++;
             g->numOfVertices--;
-            i--;
+            // g->verticesLength--;
+            // i--;
         }
     }
 
-    resizeArray(g->vertices, g->numOfVertices);
+    resizeArray(g->vertices, g->verticesLength);
 
     return sccCounter;
 }
@@ -182,7 +211,7 @@ Graph* initGraphFromCoo(CooArray* ca){
     g->startPointerLength = 0;
 
     g->vertices = (int*) malloc(ca->numOfVertices * sizeof(int));
-    g->numOfVertices = 0;
+    g->verticesLength = 0;
 
     int vid = -1;
     for(int index=0;index<ca->jLength;index++){
@@ -193,20 +222,21 @@ Graph* initGraphFromCoo(CooArray* ca){
             g->startPointer[g->startPointerLength] = index;
             g->startPointerLength++;
 
-            g->vertices[g->numOfVertices] = vid;
-            g->numOfVertices++;
+            g->vertices[g->verticesLength] = vid;
+            g->verticesLength++;
         }
     }
 
     //Get all remaining vertices
-    if(g->numOfVertices != ca->numOfVertices){
+    if(g->verticesLength != ca->numOfVertices){
         for(int i=0;i<g->endLength;i++){
-            if(notInArray(g->vertices, g->numOfVertices, g->end[i])){
-                g->vertices[g->numOfVertices] = g->end[i];
-                g->numOfVertices++;
+            if(notInArray(g->vertices, g->verticesLength, g->end[i])){
+                g->vertices[g->verticesLength] = g->end[i];
+                g->verticesLength++;
             }
         }
     }
+    g->numOfVertices = g->verticesLength;
 
     free(ca);
 
@@ -232,22 +262,26 @@ void spreadColor(Graph* g, int i, int* vertexColor, bool* changedColor){
     if(startIndex != -1){
         int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
 
-            for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-                int endvid = g->end[endIndex];
-
-                int nextColorIndex = getIndexOfValue(g->vertices, g->numOfVertices, endvid);
-                //If vertex index has been removed
-                if(nextColorIndex == -1){
-                    continue;
-                }
-
-                int nextColor = vertexColor[nextColorIndex];
-
-                if(nextColor < color){
-                    vertexColor[i] = vertexColor[nextColorIndex];
-                    *changedColor = true;
-                }
+        for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
+            //If vertex has been removed
+            int endvid = g->end[endIndex];
+            if(endvid == -1){
+                continue;
             }
+
+            int nextColorIndex = getIndexOfValue(g->vertices, g->verticesLength, endvid);
+            //If vertex index was not found
+            if(nextColorIndex == -1){
+                continue;
+            }
+
+            int nextColor = vertexColor[nextColorIndex];
+
+            if(nextColor < color){
+                vertexColor[i] = vertexColor[nextColorIndex];
+                *changedColor = true;
+            }
+        }
     }
 }
 
@@ -258,6 +292,10 @@ Array* findUniqueColors(int* vertexColor, int size){
 
     for(int i=0;i<size;i++){
         int color = vertexColor[i];
+        if(color == -1){
+            continue;
+        }
+
         if(notInArray(uniqueColors->arr, uniqueColors->length, color)){
             uniqueColors->arr[uniqueColors->length++] = color;
         }
@@ -271,7 +309,7 @@ Array* findUniqueColors(int* vertexColor, int size){
 Graph* createSubgraph(Graph* g, int* vc, int vcLength){
     Graph* subg = (Graph*) malloc(sizeof(Graph));
     subg->vertices = (int*) malloc(vcLength * sizeof(int));
-    subg->numOfVertices = 0;
+    subg->verticesLength = 0;
 
     subg->end = (int*) malloc(g->endLength * sizeof(int));
     subg->endLength = 0;
@@ -301,17 +339,19 @@ Graph* createSubgraph(Graph* g, int* vc, int vcLength){
 
                         subg->startPointer[subg->startPointerLength++] = subg->endLength;
 
-                        if(notInArray(subg->vertices, subg->numOfVertices, startid))
-                        subg->vertices[subg->numOfVertices++] = startid;
+                        if(notInArray(subg->vertices, subg->verticesLength, startid))
+                        subg->vertices[subg->verticesLength++] = startid;
                     }
                     subg->end[subg->endLength++] = endid;
 
-                    if(notInArray(subg->vertices, subg->numOfVertices, endid))
-                        subg->vertices[subg->numOfVertices++] = endid;
+                    if(notInArray(subg->vertices, subg->verticesLength, endid))
+                        subg->vertices[subg->verticesLength++] = endid;
                 }
             }
         }
     }
+
+    subg->numOfVertices = subg->verticesLength;
 
     resizeArray(subg->end, subg->endLength);
     resizeArray(subg->start, subg->startLength);
@@ -324,15 +364,22 @@ Graph* createSubgraph(Graph* g, int* vc, int vcLength){
 }
 
 Array* findSccOfColor(Graph* g, int* vertexColor, int color){
-    int* vc = (int*) malloc(g->numOfVertices * sizeof(int));
+    int* vc = (int*) malloc(g->verticesLength * sizeof(int));
     int vcLength = 0;
 
-    for(int i=0;i<g->numOfVertices;i++){
+    for(int i=0;i<g->verticesLength;i++){
         if(vertexColor[i] == color){
             vc[vcLength++] = g->vertices[i];
         }
     }
     resizeArray(vc, vcLength);
+
+    if(vcLength == 1){
+        Array* scc = (Array*) malloc(sizeof(Array));
+        scc->arr = vc;
+        scc->length = vcLength;
+        return scc;
+    }
 
     // printf("VC: ");
     // printArray(vc, vcLength);
@@ -360,7 +407,7 @@ int sequentialColorScc(Graph* g){
 
     //Init VertexColor array
     //Each Index corresponds to de vertices array and the value is the color of the vertex
-    int n = g->numOfVertices;
+    int n = g->verticesLength;
     int* vertexColor = (int*) malloc(n * sizeof(int));
 
     while(g->numOfVertices > 0){
@@ -370,24 +417,21 @@ int sequentialColorScc(Graph* g){
         }
 
         printf("Start\n");
-        //printGraph(g);
-        // printf("Vertex Color: ");
-        // printArray(vertexColor, g->numOfVertices);
+        // printGraph(g);
         printf("NumOfVertices=%d\n", g->numOfVertices);
-
-        n = g->numOfVertices;
-        for(int i=0;i<n;i++){
-            vertexColor[i] = -1;
-        }
 
         //Init each vertex color withe the vertex id
         //Can be done in Parallel
+        n = g->verticesLength;
         for(int i=0;i<n;i++){
-            initColor(vertexColor, i, g->vertices[i]);
-        }
+            vertexColor[i] = -1;
 
+            int vid = g->vertices[i];
+            if(vid != -1)
+                initColor(vertexColor, i, vid);
+        }
         // printf("Vertex Color: ");
-        // printArray(vertexColor, g->numOfVertices);
+        // printArray(vertexColor, g->verticesLength);
 
         //Spread vertex color fw until there are no changes in vertexColor
         bool changedColor = true;
@@ -397,22 +441,26 @@ int sequentialColorScc(Graph* g){
             
             //Can be done in Parallel
             for(int i=0;i<n;i++){
-                spreadColor(g, i, vertexColor, &changedColor);     
+                int vid = g->vertices[i];
+                if(vid != -1)
+                    spreadColor(g, i, vertexColor, &changedColor);     
             }
         }
         printf("Spreading color ended\n");
 
+        // printf("Vertex Color: ");
+        // printArray(vertexColor, g->verticesLength);
+
         //Find all unique colors left in the vertexColor array
         Array* uc = findUniqueColors(vertexColor, n);
 
-        // printf("Unique colors: ");
-        // printArray(uc->arr, uc->length);
+        printf("Number of Unique colors=%d\n", uc->length);
 
         printf("Finding scc number...\n");
         //For each unique color, do BFS for the for the subgraph with that color
         for(int i=0;i<uc->length;i++){
             // printf("Vertex Color: ");
-            // printArray(vertexColor, g->numOfVertices);
+            // printArray(vertexColor, g->verticesLength);
 
             int color = uc->arr[i];
 
@@ -422,7 +470,7 @@ int sequentialColorScc(Graph* g){
 
             // printf("SccLength=%d", scc->length);
             //Count SCCs found and delete from graph all vertices contained in a SCC
-            if(scc->length != 0){
+            if(scc->length > 0){
                 sccCounter++;
 
                 //Delete each vertex with if found in scc
@@ -431,13 +479,17 @@ int sequentialColorScc(Graph* g){
                     deleteVertexFromGraph(g, vertexColor, vid);
                 }
                 // printf("\n");
-                resizeArray(g->vertices, g->numOfVertices);
-                resizeArray(vertexColor, g->numOfVertices);
+                // resizeArray(g->vertices, g->verticesLength);
+                // resizeArray(vertexColor, g->verticesLength);
+            }
+            else{
+                printf("Error: Did not find any SCCs for color=%d!\n", color);
+                exit(1);
             }
             free(scc);
         }
         printf("NumOfVertices=%d\n", g->numOfVertices);
-        printf("Scc found\n");
+        printf("SCCs found=%d\n", sccCounter);
         free(uc);
     }
     return sccCounter;

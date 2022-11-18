@@ -12,11 +12,11 @@
 int main(int argc, char** argv){
     // CooArray* ca = (CooArray*) malloc(sizeof(CooArray));
 
-    // ca->i = (int[11]){1, 8, 2, 3, 4, 0, 5, 6, 4, 7, 9};
-    // ca->iLength = 11;
-    // ca->j = (int[11]){0, 0, 1, 2, 2, 3, 4, 5, 6, 6, 8};
-    // ca->jLength = 11;
-    // ca->numOfVertices = 10;
+    // ca->i = (int[9]){1, 2, 3, 4, 0, 5, 6, 4, 7};
+    // ca->iLength = 9;
+    // ca->j = (int[9]){0, 1, 2, 2, 3, 4, 5, 6, 6};
+    // ca->jLength = 9;
+    // ca->numOfVertices = 8;
 
     // ca = NULL;
 
