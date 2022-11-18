@@ -1,5 +1,6 @@
 #include "bfs.h"
 
+//Initialize queue
 void queueInit(Queue* queue, int size){
     queue->qSize = size;
     queue->arr = (int*) malloc(queue->qSize * sizeof(int));
@@ -7,6 +8,7 @@ void queueInit(Queue* queue, int size){
     queue->qEnd = 0;
 }
 
+//Push value at the end of queue
 void queuePush(Queue* queue, int val){
     queue->arr[queue->qEnd] = val;
     queue->qEnd++;
@@ -14,6 +16,7 @@ void queuePush(Queue* queue, int val){
         queue->qEnd = 0;
 }
 
+//Returns the value at the start of the queue
 int queuePop(Queue* queue){
     int val = queue->arr[queue->qStart];
     queue->qStart++;
@@ -22,6 +25,7 @@ int queuePop(Queue* queue){
     return val;
 }
 
+//Returns the index of a certain value in the given array
 int getIndexOfValue(int* array, int n, int value){
     for(int i=0;i<n;i++){
         if(array[i] == value){
@@ -32,11 +36,13 @@ int getIndexOfValue(int* array, int n, int value){
     return -1;
 }
 
+//Resizes array to a new given size
 void resizeArray(int* arr, int newSize){
     int* temp = (int*) realloc(arr, newSize * sizeof(int));
     arr = temp;
 }
 
+//Returns an array with the vertex IDs contained in the SCC
 Array* bfs(Graph* g, int s){
     int n = g->verticesLength;
     //For each vertex

@@ -20,13 +20,7 @@ void printGraph(Graph* g){
     printf("\n");
 }
 
-int* copyArray(int* arr, int size){
-    int* temp = (int*) malloc(size * sizeof(int));
-    if(temp != NULL)
-        memcpy(temp, arr, size * sizeof(int));
-    return temp;
-}
-
+//Checks if value is not contained in the given array
 bool notInArray(int* arr, int size, int value){
     for(int i=0;i<size;i++){
         if(arr[i] == value)
@@ -44,6 +38,7 @@ void bfsTest(Graph* g, int source){
     free(sccList);
 }
 
+//Returns a COO array from an mtx file
 CooArray* readMtxFile(char* filename){
     int ret_code;
     MM_typecode matcode;
@@ -157,12 +152,15 @@ CooArray* readMtxFile(char* filename){
 	return cooArray;
 }
 
+//Identifies and removes all trivial SCCs
 int trimGraph(Graph* g){
     int sccCounter = 0;
 
+    //For every vertex ID in vertices array of graph 
     for(int i=0;i<g->verticesLength;i++){
         int vid = g->vertices[i];
 
+        //Check if the vertex with this ID is a start of an edge
         int timesFoundInStart = 0;
         for(int startIndex=0;startIndex<g->startLength;startIndex++){
             if(g->start[startIndex] == vid){
@@ -171,6 +169,7 @@ int trimGraph(Graph* g){
             }
         }
 
+        //Check if the vertex with this ID is an end of an edge
         int timesFoundInEnd = 0;
         for(int endIndex=0;endIndex<g->startLength;endIndex++){
             if(g->start[endIndex] == vid){
@@ -179,6 +178,7 @@ int trimGraph(Graph* g){
             }
         }
 
+        //If the in-degree or out-degree is zero trim the vertex
         if(timesFoundInEnd == 0 || timesFoundInStart == 0){
             printf("Trimming vertex: %d\n", vid);
             deleteIndexfromArray(g->vertices, i);
@@ -192,6 +192,7 @@ int trimGraph(Graph* g){
     return sccCounter;
 }
 
+//Initializes graph from a given COO array
 Graph* initGraphFromCoo(CooArray* ca){
     Graph* g = (Graph*) malloc(sizeof(Graph));
     g->end = ca->i;
@@ -206,6 +207,7 @@ Graph* initGraphFromCoo(CooArray* ca){
     g->vertices = (int*) malloc(ca->numOfVertices * sizeof(int));
     g->verticesLength = 0;
 
+    //Find all vertices from the J (start) array
     int vid = -1;
     for(int index=0;index<ca->jLength;index++){
         if(vid != ca->j[index]){
@@ -220,7 +222,7 @@ Graph* initGraphFromCoo(CooArray* ca){
         }
     }
 
-    //Get all remaining vertices
+    //Get all remaining vertices from I (end) array
     if(g->verticesLength != ca->numOfVertices){
         for(int i=0;i<g->endLength;i++){
             if(notInArray(g->vertices, g->verticesLength, g->end[i])){
@@ -240,19 +242,22 @@ Graph* initGraphFromCoo(CooArray* ca){
     return g;
 }
 
+//Initializes each vertex with a color which equals to its ID
 void initColor(int* vertexColor, int index, int color){
     vertexColor[index] = color;
 }
 
+//Spreads color forward following the path of the edges
 void spreadColor(Graph* g, int i, int* vertexColor, bool* changedColor){
     int color = vertexColor[i];
     int vid = g->vertices[i];
 
-    //Get all the adjacent vertices of s and enqueue them if not visited
+    //Find the index of the origin vertex in the start array
     int startIndex = getIndexOfValue(g->start, g->startLength, vid);
 
     //if vertex is a start of an edge
     if(startIndex != -1){
+        //Follow the edges and spread color to the end vertices
         int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
 
         for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
@@ -278,6 +283,7 @@ void spreadColor(Graph* g, int i, int* vertexColor, bool* changedColor){
     }
 }
 
+//Returns all unique colors contained in vertexColor array
 Array* findUniqueColors(int* vertexColor, int size){
     Array* uniqueColors = (Array*) malloc(sizeof(Array));
     uniqueColors->arr = (int*) malloc(size * sizeof(int));
@@ -299,7 +305,9 @@ Array* findUniqueColors(int* vertexColor, int size){
     return uniqueColors;
 }
 
+//Creates a subgraph from the original graph with vertices in the given vc
 Graph* createSubgraph(Graph* g, int* vc, int vcLength){
+    //Init subgraph
     Graph* subg = (Graph*) malloc(sizeof(Graph));
     subg->vertices = (int*) malloc(vcLength * sizeof(int));
     subg->verticesLength = 0;
@@ -313,18 +321,20 @@ Graph* createSubgraph(Graph* g, int* vc, int vcLength){
     subg->startPointer = (int*) malloc(g->startPointerLength * sizeof(int));
     subg->startPointerLength = 0;
 
+    //For every vertex in start find if its in vc
     for(int startIndex=0;startIndex<g->startLength;startIndex++){
         bool startInSubgraph = false;
         int startid = g->start[startIndex];
 
         //if startid is in vc
         if(!notInArray(vc, vcLength, startid)){
+            //If start is in vc follow its edges
             int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
 
             for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
                 int endid = g->end[endIndex];
 
-                //if endid is in vc
+                //if both vertices are in vc put them in the subgraph
                 if(!notInArray(vc, vcLength, endid)){
                     if(!startInSubgraph){
                         subg->start[subg->startLength++] = startid;
@@ -346,6 +356,7 @@ Graph* createSubgraph(Graph* g, int* vc, int vcLength){
 
     subg->numOfVertices = subg->verticesLength;
 
+    //Resize arrays to their final size
     resizeArray(subg->end, subg->endLength);
     resizeArray(subg->start, subg->startLength);
     resizeArray(subg->startPointer, subg->startPointerLength);
@@ -356,10 +367,13 @@ Graph* createSubgraph(Graph* g, int* vc, int vcLength){
     return subg;
 }
 
+//Finds the number of in a subgraph of vertices with the same color
 Array* findSccOfColor(Graph* g, int* vertexColor, int color){
+    //Initialize an array vc for the vertices
     int* vc = (int*) malloc(g->verticesLength * sizeof(int));
     int vcLength = 0;
 
+    //Append in vc all vertices with the current color
     for(int i=0;i<g->verticesLength;i++){
         if(vertexColor[i] == color){
             vc[vcLength++] = g->vertices[i];
@@ -367,6 +381,7 @@ Array* findSccOfColor(Graph* g, int* vertexColor, int color){
     }
     resizeArray(vc, vcLength);
 
+    //If there is only one vertex with that color return the vertex
     if(vcLength == 1){
         Array* scc = (Array*) malloc(sizeof(Array));
         scc->arr = vc;
@@ -377,8 +392,10 @@ Array* findSccOfColor(Graph* g, int* vertexColor, int color){
     // printf("VC: ");
     // printArray(vc, vcLength);
 
+    //Create a subgraph with the vertices contained in vc
     Graph* subg = createSubgraph(g, vc, vcLength);
 
+    //Follow edges from sugraph with bfs and find the SCCs
     Array* scc = bfs(subg, color);
     // printf("SCC: ");
     // printArray(scc->arr, scc->length);

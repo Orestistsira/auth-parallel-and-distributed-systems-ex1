@@ -3,12 +3,6 @@
 
 #include "sequentialScc.h"
 
-// void resizeArray(int* arr, int newSize){
-//     int* temp = (int*) realloc(arr, newSize * sizeof(int));
-//     arr = temp;
-
-// }
-
 int main(int argc, char** argv){
     // CooArray* ca = (CooArray*) malloc(sizeof(CooArray));
 
