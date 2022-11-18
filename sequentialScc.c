@@ -44,10 +44,6 @@ void bfsTest(Graph* g, int source){
     free(sccList);
 }
 
-void readBanner(){
-    
-}
-
 CooArray* readMtxFile(char* filename){
     int ret_code;
     MM_typecode matcode;
@@ -185,12 +181,9 @@ int trimGraph(Graph* g){
 
         if(timesFoundInEnd == 0 || timesFoundInStart == 0){
             printf("Trimming vertex: %d\n", vid);
-            //deleteVertexFromGraph(g, g->vertices, vid);
             deleteIndexfromArray(g->vertices, i);
             sccCounter++;
             g->numOfVertices--;
-            // g->verticesLength--;
-            // i--;
         }
     }
 
@@ -443,7 +436,7 @@ int sequentialColorScc(Graph* g){
             for(int i=0;i<n;i++){
                 int vid = g->vertices[i];
                 if(vid != -1)
-                    spreadColor(g, i, vertexColor, &changedColor);     
+                    spreadColor(g, i, vertexColor, &changedColor);   
             }
         }
         printf("Spreading color ended\n");
@@ -478,9 +471,6 @@ int sequentialColorScc(Graph* g){
                     int vid = scc->arr[j];
                     deleteVertexFromGraph(g, vertexColor, vid);
                 }
-                // printf("\n");
-                // resizeArray(g->vertices, g->verticesLength);
-                // resizeArray(vertexColor, g->verticesLength);
             }
             else{
                 printf("Error: Did not find any SCCs for color=%d!\n", color);
