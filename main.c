@@ -41,8 +41,7 @@ int main(int argc, char** argv){
     Graph* g = initGraphFromCoo(ca);
     //printGraph(g);
 
-    clock_t t;
-    t = clock();
+    time_t begin = time(NULL);
 
     int numOfScc = 0;
     if(parallel){
@@ -54,11 +53,11 @@ int main(int argc, char** argv){
         numOfScc = sequentialColorScc(g);  
     }
 
-    t = clock() - t;
+    time_t end = time(NULL);
 
     printf("[Result=%d]\n", numOfScc);
 
-    printf("[ColorScc took %.4f seconds]\n", ((double)t)/CLOCKS_PER_SEC);
+    printf("[ColorScc took %ld seconds]\n", (end - begin));
 
     free(g);
 
