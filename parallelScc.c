@@ -1,11 +1,33 @@
-#include "seqScc.h"
+#include "parallelScc.h"
+
+typedef struct Arguments{
+    int id;
+    Graph* g;
+    Array* uc;
+    int* vertexColor;
+    int startIndex;
+    int endIndex;
+}Arguments;
 
 //global vars
 int parSccCounter;
 bool parChangedColor;
 
+pthread_attr_t attr;
+pthread_mutex_t mutexDeleteVertex;
+
 //Identifies and removes all trivial SCCs
-void parTrimGraph(Graph* g, int startingVertex, int endingVertex){
+void* parTrimGraph(void* args){
+    //Graph* g, int startingVertex, int endingVertex
+    Arguments* arguments = (Arguments*) args;
+    Graph* g = arguments->g;
+    int startingVertex = arguments->startIndex;
+    int endingVertex = arguments->endIndex;
+    int threadId = arguments->id;
+
+    printf("Start of thread %d:%d\n", threadId, startingVertex);
+    printf("End of thread %d:%d\n", threadId, endingVertex);
+
     //For every vertex ID in vertices array of graph 
     for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
@@ -30,14 +52,19 @@ void parTrimGraph(Graph* g, int startingVertex, int endingVertex){
 
         //If the in-degree or out-degree is zero trim the vertex
         if(timesFoundInEnd == 0 || timesFoundInStart == 0){
-            printf("Trimming vertex: %d\n", vid);
-            deleteIndexfromArray(g->vertices, i);
+            //printf("Trimming vertex: %d\n", vid);
+            pthread_mutex_lock(&mutexDeleteVertex);
+            deleteIndexfromArray(g->vertices, i);     
             parSccCounter++;
             g->numOfVertices--;
+            pthread_mutex_unlock(&mutexDeleteVertex);
         }
     }
 
     resizeArray(g->vertices, g->verticesLength);
+
+    /* Arguments go to status */
+	pthread_exit(NULL);
 }
 
 //Initializes each vertex with a color which equals to its ID
@@ -124,34 +151,55 @@ void parAccessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingCo
 
 int numOfThreads = 10;
 
-typedef struct Arguments{
-    Graph* g;
-    Array* uc;
-    int* vertexColor;
-}Arguments;
-
 int parallelColorScc(Graph* g){
     //Init threads
-    //pthread_t thread[numOfThreads];
+    pthread_t thread[numOfThreads];
+
+    int rc;
+	long i;
+    int local;
 
     parSccCounter = 0;
+    printf("NumOfVertices=%d\n", g->numOfVertices);
+    
     printf("Trimming...\n");
     //Trim trvial SCCs to simplify the graph
     //Can be done in parallel
-    // int rc;
-	// long i;
 
-	// for(i=0;i<numOfThreads;i++){
-    //     printf("In parallelScc: Creating thread #%ld\n", i);
+    pthread_mutex_init(&mutexDeleteVertex, NULL);
+    //Initialize and set thread detached attribute to joinable
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-    //     rc = pthread_create(&thread[i], NULL, trimGraph, (void*)i);
+    local = g->verticesLength / numOfThreads + 1;
+	for(i=0;i<numOfThreads;i++){
+        printf("In parallelScc: Creating thread #%ld\n", i);
 
-	// 	if(rc){
-	// 		printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
-	// 		exit(-1);
-	// 	}
-    // }
-    parTrimGraph(g, 0, g->verticesLength);
+        Arguments* args = (Arguments*) malloc(sizeof(Arguments));
+        args->g = g;
+        args->id = i;
+
+        args->startIndex = i * local;
+        args->endIndex = (i == numOfThreads - 1) ? g->verticesLength : (i + 1) * local;
+
+        rc = pthread_create(&thread[i], &attr, parTrimGraph, (void*)args);
+
+		if(rc){
+			printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
+			exit(-1);
+		}
+    }
+    /* Free attribute and wait for the other threads */
+	pthread_attr_destroy(&attr);
+
+	for(i=0;i<numOfThreads;i++){
+		rc = pthread_join(thread[i], NULL);
+		if(rc){
+			printf("ERROR; return code from pthread_join() is %d\n", rc);
+			exit(-1);
+		}
+		printf("Main: completed join with thread %ld\n", i);
+	}
     printf("Trimming ended\n");
 
     //Init VertexColor array
@@ -205,6 +253,7 @@ int parallelColorScc(Graph* g){
         free(uc);
     }
 
-    //pthread_exit(NULL);
     return parSccCounter;
+    pthread_exit(NULL);
+    pthread_mutex_destroy(&mutexDeleteVertex);
 }
