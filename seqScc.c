@@ -1,4 +1,4 @@
-#include "scc.h"
+#include "seqScc.h"
 
 //global vars
 int sccCounter;
@@ -448,67 +448,6 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
 }
 
 int sequentialColorScc(Graph* g){
-    sccCounter = 0;
-    printf("Trimming...\n");
-    //Trim trvial SCCs to simplify the graph
-    //Can be done in parallel
-    trimGraph(g, 0, g->verticesLength);
-    printf("Trimming ended\n");
-
-    //Init VertexColor array
-    //Each Index corresponds to de vertices array and the value is the color of the vertex
-    int n = g->verticesLength;
-    int* vertexColor = (int*) malloc(n * sizeof(int));
-
-    while(g->numOfVertices > 0){
-        if(g->numOfVertices == 1){
-            sccCounter++;
-            break;
-        }
-
-        printf("Start\n");
-        // printGraph(g);
-        printf("NumOfVertices=%d\n", g->numOfVertices);
-
-        //Init each vertex color withe the vertex id
-        //Can be done in Parallel
-        initColor(g, vertexColor, 0, n);
-        // printf("Vertex Color: ");
-        // printArray(vertexColor, g->verticesLength);
-
-        //Spread vertex color fw until there are no changes in vertexColor
-        changedColor = true;
-        while(changedColor){
-            printf("Spreading color...\n");
-            changedColor = false;
-            
-            //Can be done in Parallel
-            spreadColor(g, vertexColor, 0, n);
-        }
-        
-        printf("Spreading color ended\n");
-
-        // printf("Vertex Color: ");
-        // printArray(vertexColor, g->verticesLength);
-
-        //Find all unique colors left in the vertexColor array
-        Array* uc = findUniqueColors(vertexColor, n);
-
-        printf("Number of Unique colors=%d\n", uc->length);
-
-        printf("Finding scc number...\n");
-        //For each unique color, do BFS for the for the subgraph with that color
-        //Can be done in parallel
-        accessUniqueColors(g, uc, vertexColor, 0, uc->length);
-
-        printf("NumOfVertices=%d\n", g->numOfVertices);
-        printf("SCCs found=%d\n", sccCounter);
-        free(uc);
-    }
-    return sccCounter;
-}
-
-int parallelColorScc(Graph* g){
     sccCounter = 0;
     printf("Trimming...\n");
     //Trim trvial SCCs to simplify the graph

@@ -1,7 +1,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "scc.h"
+//#include "seqScc.h"
+#include "parallelScc.h"
 
 int main(int argc, char** argv){
     // CooArray* ca = (CooArray*) malloc(sizeof(CooArray));
