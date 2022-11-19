@@ -1,5 +1,9 @@
 #include "sequentialScc.h"
 
+//global vars
+int sccCounter;
+bool changedColor;
+
 void printArray(int* array, int n){
     for(int i=0;i<n;i++){
         printf("%d ", array[i]);
@@ -153,11 +157,9 @@ CooArray* readMtxFile(char* filename){
 }
 
 //Identifies and removes all trivial SCCs
-int trimGraph(Graph* g){
-    int sccCounter = 0;
-
+void trimGraph(Graph* g, int startingVertex, int endingVertex){
     //For every vertex ID in vertices array of graph 
-    for(int i=0;i<g->verticesLength;i++){
+    for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
 
         //Check if the vertex with this ID is a start of an edge
@@ -188,8 +190,6 @@ int trimGraph(Graph* g){
     }
 
     resizeArray(g->vertices, g->verticesLength);
-
-    return sccCounter;
 }
 
 //Initializes graph from a given COO array
@@ -243,43 +243,54 @@ Graph* initGraphFromCoo(CooArray* ca){
 }
 
 //Initializes each vertex with a color which equals to its ID
-void initColor(int* vertexColor, int index, int color){
-    vertexColor[index] = color;
+void initColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex){
+    for(int i=startingVertex;i<endingVertex;i++){
+        vertexColor[i] = -1;
+
+        int vid = g->vertices[i];
+        if(vid != -1)
+            vertexColor[i] = vid;
+    }    
 }
 
 //Spreads color forward following the path of the edges
-void spreadColor(Graph* g, int i, int* vertexColor, bool* changedColor){
-    int color = vertexColor[i];
-    int vid = g->vertices[i];
+void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex){
+    for(int i=startingVertex;i<endingVertex;i++){
+        int vid = g->vertices[i];
+        if(vid != -1){
+            int color = vertexColor[i];
+            int vid = g->vertices[i];
 
-    //Find the index of the origin vertex in the start array
-    int startIndex = getIndexOfValue(g->start, g->startLength, vid);
+            //Find the index of the origin vertex in the start array
+            int startIndex = getIndexOfValue(g->start, g->startLength, vid);
 
-    //if vertex is a start of an edge
-    if(startIndex != -1){
-        //Follow the edges and spread color to the end vertices
-        int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
+            //if vertex is a start of an edge
+            if(startIndex != -1){
+                //Follow the edges and spread color to the end vertices
+                int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
 
-        for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-            //If vertex has been removed
-            int endvid = g->end[endIndex];
-            if(endvid == -1){
-                continue;
+                for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
+                    //If vertex has been removed
+                    int endvid = g->end[endIndex];
+                    if(endvid == -1){
+                        continue;
+                    }
+
+                    int nextColorIndex = getIndexOfValue(g->vertices, g->verticesLength, endvid);
+                    //If vertex index was not found
+                    if(nextColorIndex == -1){
+                        continue;
+                    }
+
+                    int nextColor = vertexColor[nextColorIndex];
+
+                    if(nextColor < color){
+                        vertexColor[i] = vertexColor[nextColorIndex];
+                        changedColor = true;
+                    }
+                }
             }
-
-            int nextColorIndex = getIndexOfValue(g->vertices, g->verticesLength, endvid);
-            //If vertex index was not found
-            if(nextColorIndex == -1){
-                continue;
-            }
-
-            int nextColor = vertexColor[nextColorIndex];
-
-            if(nextColor < color){
-                vertexColor[i] = vertexColor[nextColorIndex];
-                *changedColor = true;
-            }
-        }
+        } 
     }
 }
 
@@ -406,13 +417,42 @@ Array* findSccOfColor(Graph* g, int* vertexColor, int color){
     return scc;
 }
 
-int sequentialColorScc(Graph* g){
-    int sccCounter = 0;
+void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
+    for(int i=0;i<uc->length;i++){
+        // printf("Vertex Color: ");
+        // printArray(vertexColor, g->verticesLength);
 
+        int color = uc->arr[i];
+
+        // printf("Color:%d\n", color);
+        //Find all vertexes with color and put them in vc
+        Array* scc = findSccOfColor(g, vertexColor, color);
+
+        // printf("SccLength=%d", scc->length);
+        //Count SCCs found and delete from graph all vertices contained in a SCC
+        if(scc->length > 0){
+            sccCounter++;
+
+            //Delete each vertex with if found in scc
+            for(int j=0;j<scc->length;j++){
+                int vid = scc->arr[j];
+                deleteVertexFromGraph(g, vertexColor, vid);
+            }
+        }
+        else{
+            printf("Error: Did not find any SCCs for color=%d!\n", color);
+            exit(1);
+        }
+        free(scc);
+    }
+}
+
+int sequentialColorScc(Graph* g){
+    sccCounter = 0;
     printf("Trimming...\n");
     //Trim trvial SCCs to simplify the graph
     //Can be done in parallel
-    sccCounter += trimGraph(g);
+    trimGraph(g, 0, g->verticesLength);
     printf("Trimming ended\n");
 
     //Init VertexColor array
@@ -432,30 +472,20 @@ int sequentialColorScc(Graph* g){
 
         //Init each vertex color withe the vertex id
         //Can be done in Parallel
-        n = g->verticesLength;
-        for(int i=0;i<n;i++){
-            vertexColor[i] = -1;
-
-            int vid = g->vertices[i];
-            if(vid != -1)
-                initColor(vertexColor, i, vid);
-        }
+        initColor(g, vertexColor, 0, n);
         // printf("Vertex Color: ");
         // printArray(vertexColor, g->verticesLength);
 
         //Spread vertex color fw until there are no changes in vertexColor
-        bool changedColor = true;
+        changedColor = true;
         while(changedColor){
             printf("Spreading color...\n");
             changedColor = false;
             
             //Can be done in Parallel
-            for(int i=0;i<n;i++){
-                int vid = g->vertices[i];
-                if(vid != -1)
-                    spreadColor(g, i, vertexColor, &changedColor);   
-            }
+            spreadColor(g, vertexColor, 0, n);
         }
+        
         printf("Spreading color ended\n");
 
         // printf("Vertex Color: ");
@@ -468,33 +498,9 @@ int sequentialColorScc(Graph* g){
 
         printf("Finding scc number...\n");
         //For each unique color, do BFS for the for the subgraph with that color
-        for(int i=0;i<uc->length;i++){
-            // printf("Vertex Color: ");
-            // printArray(vertexColor, g->verticesLength);
+        //Can be done in parallel
+        accessUniqueColors(g, uc, vertexColor, 0, uc->length);
 
-            int color = uc->arr[i];
-
-            // printf("Color:%d\n", color);
-            //Find all vertexes with color and put them in vc
-            Array* scc = findSccOfColor(g, vertexColor, color);
-
-            // printf("SccLength=%d", scc->length);
-            //Count SCCs found and delete from graph all vertices contained in a SCC
-            if(scc->length > 0){
-                sccCounter++;
-
-                //Delete each vertex with if found in scc
-                for(int j=0;j<scc->length;j++){
-                    int vid = scc->arr[j];
-                    deleteVertexFromGraph(g, vertexColor, vid);
-                }
-            }
-            else{
-                printf("Error: Did not find any SCCs for color=%d!\n", color);
-                exit(1);
-            }
-            free(scc);
-        }
         printf("NumOfVertices=%d\n", g->numOfVertices);
         printf("SCCs found=%d\n", sccCounter);
         free(uc);

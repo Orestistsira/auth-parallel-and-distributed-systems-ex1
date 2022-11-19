@@ -23,18 +23,20 @@ void bfsTest(Graph* g, int source);
 
 CooArray* readMtxFile(char* file);
 
-int trimGraph(Graph* g);
+void trimGraph(Graph* g, int startingVertex, int endingVertex);
 
 Graph* initGraphFromCoo(CooArray* ca);
 
-void initColor(int* vertexColor, int index, int color);
+void initColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex);
 
-void spreadColor(Graph* g, int i, int* vertexColor, bool* changedColor);
+void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex);
 
 Array* findUniqueColors(int* vertexColor, int size);
 
 Graph* createSubgraph(Graph* g, int* vc, int vcLength);
 
 Array* findSccOfColor(Graph* g, int* vertexColor, int color);
+
+void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor);
 
 int sequentialColorScc(Graph* g);
