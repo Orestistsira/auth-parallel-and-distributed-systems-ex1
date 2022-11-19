@@ -1,7 +1,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "sequentialScc.h"
+#include "scc.h"
 
 int main(int argc, char** argv){
     // CooArray* ca = (CooArray*) malloc(sizeof(CooArray));
@@ -15,7 +15,17 @@ int main(int argc, char** argv){
     // ca = NULL;
 
     char* filename = NULL;
-    if(argc == 2){
+    bool parallel = false;
+    if(argc == 3){
+        filename = argv[1];
+        if(!strcmp("parallel", argv[2]))
+            parallel = true;
+        else if(!strcmp("sequential", argv[2]))
+            parallel = false;
+        else
+            printf("Error in arguments!\n");
+    }
+    else if(argc == 2){
         filename = argv[1];
     }
     else{
@@ -33,7 +43,15 @@ int main(int argc, char** argv){
     clock_t t;
     t = clock();
 
-    int numOfScc = sequentialColorScc(g);
+    int numOfScc = 0;
+    if(parallel){
+        printf("Starting parallel algorithm...\n");
+        numOfScc = parallelColorScc(g);
+    }
+    else{
+        printf("Starting sequential algorithm...\n");
+        numOfScc = sequentialColorScc(g);  
+    }
 
     t = clock() - t;
 
