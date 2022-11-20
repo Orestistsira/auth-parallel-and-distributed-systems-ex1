@@ -86,7 +86,6 @@ CooArray* readMtxFile(char* filename){
     fgetpos(f, &pos);
     char str[150];
     fgets(str,150, f);
-    printf("%s\n", str);
 
     i=0;
     while(i<=str[i]){
@@ -121,8 +120,8 @@ CooArray* readMtxFile(char* filename){
         /* now write out matrix */
         /************************/
 
-        // mm_write_banner(stdout, matcode);
-        // mm_write_mtx_crd_size(stdout, M, N, nz);
+        mm_write_banner(stdout, matcode);
+        mm_write_mtx_crd_size(stdout, M, N, nz);
         // for(i=0; i<nz; i++){
         //     fprintf(stdout, "%d %d %20.19g\n", I[i]+1, J[i]+1, val[i]);
         // }
@@ -137,8 +136,8 @@ CooArray* readMtxFile(char* filename){
 
         if (f !=stdin) fclose(f);
 
-        // mm_write_banner(stdout, matcode);
-        // mm_write_mtx_crd_size(stdout, M, N, nz);
+        mm_write_banner(stdout, matcode);
+        mm_write_mtx_crd_size(stdout, M, N, nz);
         // for(i=0; i<nz; i++){
         //     fprintf(stdout, "%d %d\n", I[i]+1, J[i]+1);
         // }
@@ -154,6 +153,7 @@ CooArray* readMtxFile(char* filename){
     cooArray->iLength = nz;
     cooArray->jLength = nz;
     cooArray->numOfVertices = M;
+    printf("\n");
 
 	return cooArray;
 }
@@ -369,7 +369,7 @@ Graph* createSubgraph(Graph* g, int* vc, int vcLength){
                         subg->startPointer[subg->startPointerLength++] = subg->endLength;
 
                         if(notInArray(subg->vertices, subg->verticesLength, startid))
-                        subg->vertices[subg->verticesLength++] = startid;
+                            subg->vertices[subg->verticesLength++] = startid;
                     }
                     subg->end[subg->endLength++] = endid;
 
