@@ -97,6 +97,7 @@ void* parTrimGraph(void* args){
         trimArgs->timesFoundInStart = 0;
         trimArgs->timesFoundInEnd = 0;
 
+        //Maybe more threads?
         pthread_t trimThread[2];
 
         int rc;
@@ -106,7 +107,6 @@ void* parTrimGraph(void* args){
         rc = pthread_create(&trimThread[0], &attr, trimStart, (void*)trimArgs);
 
 		if(rc){
-			// printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
 			exit(-1);
 		}
 
@@ -115,7 +115,6 @@ void* parTrimGraph(void* args){
         rc = pthread_create(&trimThread[1], &attr, trimEnd, (void*)trimArgs);
 
 		if(rc){
-			// printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
 			exit(-1);
 		}
 
@@ -134,6 +133,7 @@ void* parTrimGraph(void* args){
         if(timesFoundInEnd == 0 || timesFoundInStart == 0){
             // printf("Trimming vertex: %d\n", vid); 
             deleteIndexfromArray(g->vertices, i);
+            //MUTEX
             pthread_mutex_lock(&mutexAddScc);
             parSccCounter++;
             g->numOfVertices--;
@@ -545,10 +545,12 @@ void* parAccessUniqueColors(void* args){
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
-                pthread_mutex_lock(&mutexDeleteVertex);
-                deleteVertexFromGraph(g, vertexColor, vid);
-                pthread_mutex_unlock(&mutexDeleteVertex);
+                deleteVertexFromGraph(g, vertexColor, vid); 
             }
+
+            pthread_mutex_lock(&mutexDeleteVertex);
+            g->numOfVertices -= scc->length;
+            pthread_mutex_unlock(&mutexDeleteVertex);
         }
         else{
             printf("Error: Did not find any SCCs for color=%d!\n", color);

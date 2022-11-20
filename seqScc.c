@@ -197,7 +197,7 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
 
         //If the in-degree or out-degree is zero trim the vertex
         if(timesFoundInEnd == 0 || timesFoundInStart == 0){
-            printf("Trimming vertex: %d\n", vid);
+            //printf("Trimming vertex: %d\n", vid);
             deleteIndexfromArray(g->vertices, i);
             sccCounter++;
             g->numOfVertices--;
@@ -452,6 +452,7 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
                 deleteVertexFromGraph(g, vertexColor, vid);
+                g->numOfVertices--;
             }
         }
         else{
@@ -493,8 +494,8 @@ int sequentialColorScc(Graph* g){
 
         //Spread vertex color fw until there are no changes in vertexColor
         changedColor = true;
-        while(changedColor){
-            printf("Spreading color...\n");
+        printf("Spreading color...\n");
+        while(changedColor){     
             changedColor = false;
             
             //Can be done in Parallel
