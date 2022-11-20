@@ -121,11 +121,11 @@ CooArray* readMtxFile(char* filename){
         /* now write out matrix */
         /************************/
 
-        mm_write_banner(stdout, matcode);
-        mm_write_mtx_crd_size(stdout, M, N, nz);
-        for(i=0; i<nz; i++){
-            fprintf(stdout, "%d %d %20.19g\n", I[i]+1, J[i]+1, val[i]);
-        }
+        // mm_write_banner(stdout, matcode);
+        // mm_write_mtx_crd_size(stdout, M, N, nz);
+        // for(i=0; i<nz; i++){
+        //     fprintf(stdout, "%d %d %20.19g\n", I[i]+1, J[i]+1, val[i]);
+        // }
     }
     else if(numOfCols == 2){
         //For unweighted graphs
@@ -137,9 +137,11 @@ CooArray* readMtxFile(char* filename){
 
         if (f !=stdin) fclose(f);
 
-        for(i=0; i<nz; i++){
-            fprintf(stdout, "%d %d\n", I[i]+1, J[i]+1);
-        }
+        // mm_write_banner(stdout, matcode);
+        // mm_write_mtx_crd_size(stdout, M, N, nz);
+        // for(i=0; i<nz; i++){
+        //     fprintf(stdout, "%d %d\n", I[i]+1, J[i]+1);
+        // }
     }
     else{
         printf("Error: Number of columns not 2 or 3!\n");
@@ -166,15 +168,28 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
         int timesFoundInStart = 0;
         for(int startIndex=0;startIndex<g->startLength;startIndex++){
             if(g->start[startIndex] == vid){
-                timesFoundInStart++;
-                break;
+                //Follow the edges and check if there is a self loop
+                int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
+
+                for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
+                    //If vertex has been removed
+                    int endvid = g->end[endIndex];
+                    if(endvid == -1){
+                        continue;
+                    }
+
+                    if(endvid != vid){
+                        timesFoundInStart++;
+                        break;
+                    }
+                }      
             }
         }
 
         //Check if the vertex with this ID is an end of an edge
         int timesFoundInEnd = 0;
-        for(int endIndex=0;endIndex<g->startLength;endIndex++){
-            if(g->start[endIndex] == vid){
+        for(int endIndex=0;endIndex<g->endLength;endIndex++){
+            if(g->end[endIndex] == vid){
                 timesFoundInEnd++;
                 break;
             }
