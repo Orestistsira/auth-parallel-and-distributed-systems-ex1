@@ -12,10 +12,10 @@ typedef struct Arguments{
 //global vars
 int parSccCounter;
 bool parChangedColor;
+int numOfThreads = 30;
 
 pthread_attr_t attr;
-pthread_mutex_t mutexDeleteVertex;
-pthread_mutex_t mutexChangeVertexColor;
+pthread_mutex_t mutexAddScc;
 
 //Identifies and removes all trivial SCCs
 void* parTrimGraph(void* args){
@@ -72,10 +72,10 @@ void* parTrimGraph(void* args){
         if(timesFoundInEnd == 0 || timesFoundInStart == 0){
             // printf("Trimming vertex: %d\n", vid); 
             deleteIndexfromArray(g->vertices, i);
-            pthread_mutex_lock(&mutexDeleteVertex);
+            pthread_mutex_lock(&mutexAddScc);
             parSccCounter++;
             g->numOfVertices--;
-            pthread_mutex_unlock(&mutexDeleteVertex);
+            pthread_mutex_unlock(&mutexAddScc);
         }
     }
 
@@ -83,6 +83,49 @@ void* parTrimGraph(void* args){
 
     /* Arguments go to status */
 	pthread_exit(NULL);
+}
+
+void createThreadsForTrim(Graph* g){
+    pthread_t thread[numOfThreads];
+
+    int rc;
+	long i;
+    int local;
+
+    //Trim trvial SCCs to simplify the graph
+    //Can be done in parallel
+
+
+    local = g->verticesLength / numOfThreads + 1;
+	for(i=0;i<numOfThreads;i++){
+        // printf("In parallelScc: Creating thread #%ld\n", i);
+
+        Arguments* args = (Arguments*) malloc(sizeof(Arguments));
+        args->g = g;
+        args->id = i;
+
+        args->startIndex = i * local;
+        args->endIndex = ((i + 1) * local) > g->verticesLength ? g->verticesLength : (i + 1) * local;
+
+        rc = pthread_create(&thread[i], &attr, parTrimGraph, (void*)args);
+
+		if(rc){
+			// printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
+			exit(-1);
+		}
+    }
+    /* Free attribute and wait for the other threads */
+	//pthread_attr_destroy(&attr);
+
+	for(i=0;i<numOfThreads;i++){
+		rc = pthread_join(thread[i], NULL);
+
+		if(rc){
+			printf("ERROR; return code from pthread_join() is %d\n", rc);
+			exit(-1);
+		}
+		// printf("Main: completed join with thread %ld\n", i);
+	}
 }
 
 //Initializes each vertex with a color which equals to its ID
@@ -107,6 +150,45 @@ void* parInitColor(void* args){
     }   
 
     pthread_exit(NULL); 
+}
+
+void createThreadsForInitColor(Graph* g, int* vertexColor){
+    pthread_t thread[numOfThreads];
+
+    int rc;
+	long i;
+    int local;
+
+    local = g->verticesLength / numOfThreads + 1;
+    for(i=0;i<numOfThreads;i++){
+        // printf("In parallelScc: Creating thread #%ld\n", i);
+
+        Arguments* args = (Arguments*) malloc(sizeof(Arguments));
+        args->g = g;
+        args->id = i;
+
+        args->vertexColor = vertexColor;
+        args->startIndex = i * local;
+        args->endIndex = ((i + 1) * local) > g->verticesLength ? g->verticesLength : (i + 1) * local;
+
+        rc = pthread_create(&thread[i], &attr, parInitColor, (void*)args);
+
+        if(rc){
+            printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
+            exit(-1);
+        }
+    }
+    /* Free attribute and wait for the other threads */
+    //pthread_attr_destroy(&attr);
+
+    for(i=0;i<numOfThreads;i++){
+        rc = pthread_join(thread[i], NULL);
+        if(rc){
+            printf("ERROR; return code from pthread_join() is %d\n", rc);
+            exit(-1);
+        }
+        // printf("Main: completed join with thread %ld\n", i);
+    }
 }
 
 //Spreads color forward following the path of the edges
@@ -152,10 +234,8 @@ void* parSpreadColor(void* args){
                     int nextColor = vertexColor[nextColorIndex];
 
                     if(nextColor < color){
-                        //pthread_mutex_lock(&mutexChangeVertexColor);
                         vertexColor[i] = vertexColor[nextColorIndex];
                         parChangedColor = true;
-                        //pthread_mutex_unlock(&mutexChangeVertexColor);
                     }
                 }
             }
@@ -163,6 +243,45 @@ void* parSpreadColor(void* args){
     }
 
     pthread_exit(NULL);
+}
+
+void createThreadsForSpreadColor(Graph* g, int* vertexColor){
+    pthread_t thread[numOfThreads];
+
+    int rc;
+	long i;
+    int local;
+    
+    local = g->verticesLength / numOfThreads + 1;
+    for(i=0;i<numOfThreads;i++){
+        // printf("In parallelScc: Creating thread #%ld\n", i);
+
+        Arguments* args = (Arguments*) malloc(sizeof(Arguments));
+        args->g = g;
+        args->id = i;
+
+        args->vertexColor = vertexColor;
+        args->startIndex = i * local;
+        args->endIndex = ((i + 1) * local) > g->verticesLength ? g->verticesLength : (i + 1) * local;
+
+        rc = pthread_create(&thread[i], &attr, parSpreadColor, (void*)args);
+
+        if(rc){
+            printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
+            exit(-1);
+        }
+    }
+    /* Free attribute and wait for the other threads */
+    pthread_attr_destroy(&attr);
+
+    for(i=0;i<numOfThreads;i++){
+        rc = pthread_join(thread[i], NULL);
+        if(rc){
+            printf("ERROR; return code from pthread_join() is %d\n", rc);
+            exit(-1);
+        }
+        // printf("Main: completed join with thread %ld\n", i);
+    }
 }
 
 void* parAccessUniqueColors(void* args){
@@ -193,16 +312,14 @@ void* parAccessUniqueColors(void* args){
         //Count SCCs found and delete from graph all vertices contained in a SCC
         if(scc->length > 0){
             //MUTEX
-            pthread_mutex_lock(&mutexDeleteVertex);
+            pthread_mutex_lock(&mutexAddScc);
             parSccCounter++;
-            pthread_mutex_unlock(&mutexDeleteVertex);
+            pthread_mutex_unlock(&mutexAddScc);
 
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
-                //pthread_mutex_lock(&mutexDeleteVertex);
                 deleteVertexFromGraph(g, vertexColor, vid);
-                //pthread_mutex_unlock(&mutexDeleteVertex);
             }
         }
         else{
@@ -215,61 +332,59 @@ void* parAccessUniqueColors(void* args){
     pthread_exit(NULL);
 }
 
-int parallelColorScc(Graph* g){
-    //Init threads
-    int numOfThreads = 30;
+void createThreadsForUniqueColor(Graph* g, Array* uc, int* vertexColor){
     pthread_t thread[numOfThreads];
 
     int rc;
 	long i;
     int local;
 
-    parSccCounter = 0;
-    printf("NumOfVertices=%d\n", g->numOfVertices);
-    
-    printf("Trimming...\n");
-    //Trim trvial SCCs to simplify the graph
-    //Can be done in parallel
-
-    //Initialize mutexes
-    pthread_mutex_init(&mutexDeleteVertex, NULL);
-    pthread_mutex_init(&mutexChangeVertexColor, NULL);
-
-    //Initialize and set thread detached attribute to joinable
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-    local = g->verticesLength / numOfThreads + 1;
-	for(i=0;i<numOfThreads;i++){
+    local = uc->length / numOfThreads + 1;
+    printf("Local=%d\n", local);
+    for(i=0;i<numOfThreads;i++){
         // printf("In parallelScc: Creating thread #%ld\n", i);
 
         Arguments* args = (Arguments*) malloc(sizeof(Arguments));
         args->g = g;
         args->id = i;
-
+        args->uc = uc;
+        args->vertexColor = vertexColor;
         args->startIndex = i * local;
-        args->endIndex = ((i + 1) * local) > g->verticesLength ? g->verticesLength : (i + 1) * local;
+        args->endIndex = ((i + 1) * local) > uc->length ? uc->length : (i + 1) * local;
+            
+        rc = pthread_create(&thread[i], &attr, parAccessUniqueColors, (void*)args);
 
-        rc = pthread_create(&thread[i], &attr, parTrimGraph, (void*)args);
-
-		if(rc){
-			// printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
-			exit(-1);
-		}
+        if(rc){
+            printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
+            exit(-1);
+        }
     }
-    /* Free attribute and wait for the other threads */
-	pthread_attr_destroy(&attr);
-    void* status;
 
-	for(i=0;i<numOfThreads;i++){
-		rc = pthread_join(thread[i], &status);
+    for(i=0;i<numOfThreads;i++){
+        rc = pthread_join(thread[i], NULL);
+        if(rc){
+            printf("ERROR; return code from pthread_join() is %d\n", rc);
+            exit(-1);
+        }
+        // printf("Main: completed join with thread %ld\n", i);
+    }
+}
 
-		if(rc){
-			printf("ERROR; return code from pthread_join() is %d\n", rc);
-			exit(-1);
-		}
-		// printf("Main: completed join with thread %ld\n", i);
-	}
+int parallelColorScc(Graph* g){
+    //Init threads
+    parSccCounter = 0;
+ 
+    printf("NumOfVertices=%d\n", g->numOfVertices);
+
+    //Initialize mutexes
+    pthread_mutex_init(&mutexAddScc, NULL);
+
+    //Initialize and set thread detached attribute to joinable
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+    
+    printf("Trimming...\n");
+    createThreadsForTrim(g);
     printf("Trimming ended\n");
 
     //Init VertexColor array
@@ -278,7 +393,6 @@ int parallelColorScc(Graph* g){
     int* vertexColor = (int*) malloc(n * sizeof(int));
 
     while(g->numOfVertices > 0){
-        //numOfThreads = 30;
         if(g->numOfVertices == 1){
             parSccCounter++;
             break;
@@ -293,38 +407,9 @@ int parallelColorScc(Graph* g){
         //Init each vertex color withe the vertex id
         //Can be done in Parallel
         printf("Initializing colors...\n");
-        local = g->verticesLength / numOfThreads + 1;
-        for(i=0;i<numOfThreads;i++){
-            // printf("In parallelScc: Creating thread #%ld\n", i);
-
-            Arguments* args = (Arguments*) malloc(sizeof(Arguments));
-            args->g = g;
-            args->id = i;
-
-            args->vertexColor = vertexColor;
-            args->startIndex = i * local;
-            args->endIndex = ((i + 1) * local) > g->verticesLength ? g->verticesLength : (i + 1) * local;
-
-            rc = pthread_create(&thread[i], &attr, parInitColor, (void*)args);
-
-            if(rc){
-                printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
-                exit(-1);
-            }
-        }
-        /* Free attribute and wait for the other threads */
-        pthread_attr_destroy(&attr);
-
-        for(i=0;i<numOfThreads;i++){
-            rc = pthread_join(thread[i], NULL);
-            if(rc){
-                printf("ERROR; return code from pthread_join() is %d\n", rc);
-                exit(-1);
-            }
-            // printf("Main: completed join with thread %ld\n", i);
-        }
-        //parInitColor(g, vertexColor, 0, n);
-        printf("Colors initialized...\n");
+        createThreadsForInitColor(g, vertexColor);
+        printf("Colors initialized.\n");
+        
         // printf("Vertex Color: ");
         // printArray(vertexColor, g->verticesLength);
 
@@ -334,42 +419,9 @@ int parallelColorScc(Graph* g){
         while(parChangedColor){
             
             parChangedColor = false;
-            
-            //Can be done in Parallel
-            local = g->verticesLength / numOfThreads + 1;
-            for(i=0;i<numOfThreads;i++){
-                // printf("In parallelScc: Creating thread #%ld\n", i);
-
-                Arguments* args = (Arguments*) malloc(sizeof(Arguments));
-                args->g = g;
-                args->id = i;
-
-                args->vertexColor = vertexColor;
-                args->startIndex = i * local;
-                args->endIndex = ((i + 1) * local) > g->verticesLength ? g->verticesLength : (i + 1) * local;
-
-                rc = pthread_create(&thread[i], &attr, parSpreadColor, (void*)args);
-
-                if(rc){
-                    printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
-                    exit(-1);
-                }
-            }
-            /* Free attribute and wait for the other threads */
-            pthread_attr_destroy(&attr);
-
-            for(i=0;i<numOfThreads;i++){
-                rc = pthread_join(thread[i], NULL);
-                if(rc){
-                    printf("ERROR; return code from pthread_join() is %d\n", rc);
-                    exit(-1);
-                }
-                // printf("Main: completed join with thread %ld\n", i);
-            }
-            //parSpreadColor(g, vertexColor, 0, n);
-        }
-        
-        printf("Spreading color ended\n");
+            createThreadsForSpreadColor(g, vertexColor);
+        }    
+        printf("Spreading color ended.\n");
 
         // printf("Vertex Color: ");
         // printArray(vertexColor, g->verticesLength);
@@ -383,37 +435,8 @@ int parallelColorScc(Graph* g){
         printf("Finding scc number...\n");
         //For each unique color, do BFS for the for the subgraph with that color
         //Can be done in parallel
-        local = uc->length / numOfThreads + 1;
-        printf("Local=%d\n", local);
-        for(i=0;i<numOfThreads;i++){
-            // printf("In parallelScc: Creating thread #%ld\n", i);
-
-            Arguments* args = (Arguments*) malloc(sizeof(Arguments));
-            args->g = g;
-            args->id = i;
-            args->uc = uc;
-            args->vertexColor = vertexColor;
-            args->startIndex = i * local;
-            args->endIndex = ((i + 1) * local) > uc->length ? uc->length : (i + 1) * local;
-               
-            rc = pthread_create(&thread[i], &attr, parAccessUniqueColors, (void*)args);
-
-            if(rc){
-                printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
-                exit(-1);
-            }
-        }
-        /* Free attribute and wait for the other threads */
-        pthread_attr_destroy(&attr);
-
-        for(i=0;i<numOfThreads;i++){
-            rc = pthread_join(thread[i], NULL);
-            if(rc){
-                printf("ERROR; return code from pthread_join() is %d\n", rc);
-                exit(-1);
-            }
-            // printf("Main: completed join with thread %ld\n", i);
-        }
+        createThreadsForUniqueColor(g, uc, vertexColor);
+        
         //parAccessUniqueColors(g, uc, vertexColor, 0, uc->length);
 
         printf("NumOfVertices=%d\n", g->numOfVertices);
@@ -423,6 +446,6 @@ int parallelColorScc(Graph* g){
 
     return parSccCounter;
     pthread_exit(NULL);
-    pthread_mutex_destroy(&mutexDeleteVertex);
-    pthread_mutex_destroy(&mutexChangeVertexColor);
+    pthread_mutex_destroy(&mutexAddScc);
+    pthread_attr_destroy(&attr);
 }
