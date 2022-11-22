@@ -39,4 +39,4 @@ Array* findSccOfColor(Graph* g, int* vertexColor, int color);
 
 void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor);
 
-int sequentialColorScc(Graph* g);
+int sequentialColorScc(Graph* g, bool trimming);

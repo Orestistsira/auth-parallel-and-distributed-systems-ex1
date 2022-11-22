@@ -469,14 +469,17 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
     }
 }
 
-int sequentialColorScc(Graph* g){
+int sequentialColorScc(Graph* g, bool trimming){
     sccCounter = 0;
-    printf("Trimming...\n");
+    
     //Trim trvial SCCs to simplify the graph
     //Can be done in parallel
-    trimGraph(g, 0, g->verticesLength);
-    printf("Trimming ended\n");
-
+    if(trimming){
+        printf("Trimming...\n");
+        trimGraph(g, 0, g->verticesLength);
+        printf("Trimming ended\n");
+    }
+    
     //Init VertexColor array
     //Each Index corresponds to de vertices array and the value is the color of the vertex
     int n = g->verticesLength;

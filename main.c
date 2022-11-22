@@ -17,14 +17,29 @@ int main(int argc, char** argv){
 
     char* filename = NULL;
     bool parallel = false;
-    if(argc == 3){
+    bool trimming = false;
+    int givenNumOfThreads = 10;
+    if(argc == 5){
         filename = argv[1];
-        if(!strcmp("parallel", argv[2]))
+        
+        if(!strcmp("trimming", argv[2]))
+            trimming = true;
+        else if(!strcmp("no-trimming", argv[2]))
+            trimming = false;
+        else
+            printf("Error in arguments!\n");
+
+
+        if(!strcmp("parallel", argv[3]))
             parallel = true;
-        else if(!strcmp("sequential", argv[2]))
+        else if(!strcmp("sequential", argv[3]))
             parallel = false;
         else
             printf("Error in arguments!\n");
+
+
+        givenNumOfThreads = atoi(argv[4]);
+
     }
     else if(argc == 2){
         filename = argv[1];
@@ -46,11 +61,11 @@ int main(int argc, char** argv){
     int numOfScc = 0;
     if(parallel){
         printf("Starting parallel algorithm...\n");
-        numOfScc = parallelColorScc(g);
+        numOfScc = parallelColorScc(g, trimming, givenNumOfThreads);
     }
     else{
         printf("Starting sequential algorithm...\n");
-        numOfScc = sequentialColorScc(g);  
+        numOfScc = sequentialColorScc(g, trimming);
     }
 
     time_t end = time(NULL);

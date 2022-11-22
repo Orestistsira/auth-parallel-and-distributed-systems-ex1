@@ -2,6 +2,6 @@
 
 make scc
 
-./colorScc [graph name] [sequential/parallel] 
+./colorScc graph-name [trimming/no-trimming] [sequential/parallel] [number of threads]
 
-(default = sequential)
+(default = no-trimming, default = sequential, default = 10 threads)
