@@ -85,7 +85,9 @@ CooArray* readMtxFile(char* filename){
 
     fgetpos(f, &pos);
     char str[150];
-    fgets(str,150, f);
+    if(fgets(str,150, f) == NULL){
+        printf("Error: Cannot read graph!\n");
+    }
 
     i=0;
     while(i<=str[i]){
@@ -109,7 +111,9 @@ CooArray* readMtxFile(char* filename){
     if(numOfCols == 3){
         //For weighted graphs
         for(i=0; i<nz; i++){
-            fscanf(f, "%d %d %lg\n", &I[i], &J[i], &val[i]);
+            if(fscanf(f, "%d %d %lg\n", &I[i], &J[i], &val[i]) == 0){
+                printf("Error: Cannot read graph!\n");
+            }
             I[i]--;  /* adjust from 1-based to 0-based */
             J[i]--;
         }
@@ -129,7 +133,9 @@ CooArray* readMtxFile(char* filename){
     else if(numOfCols == 2){
         //For unweighted graphs
         for(i=0; i<nz; i++){
-            fscanf(f, "%d %d\n", &I[i], &J[i]);
+            if(fscanf(f, "%d %d\n", &I[i], &J[i]) == 0){
+                printf("Error: Cannot read graph!\n");
+            }
             I[i]--;  /* adjust from 1-based to 0-based */
             J[i]--;
         }
