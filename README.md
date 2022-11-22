@@ -1,5 +1,7 @@
 # auth-parallel-and-distributed-systems
 
-gcc -Wall main.c seqScc.c parallelScc.c bfs.c graph.c mmio.c -O3 -pthread -o colorScc
+make scc
 
-./colorScc [graph name] [sequential/parallel]
+./colorScc [graph name] [sequential/parallel] 
+
+(default = sequential)
