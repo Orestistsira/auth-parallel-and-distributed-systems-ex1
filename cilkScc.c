@@ -1,28 +1,8 @@
-#include "seqScc.h"
+#include "cilkScc.h"
 
 //global vars
 int sccCounter;
 bool changedColor;
-
-void printArray(int* array, int n){
-    for(int i=0;i<n;i++){
-        printf("%d ", array[i]);
-    }
-    printf("\n");
-}
-
-void printGraph(Graph* g){
-    printf("End:---------------------------------------------------------------------------------------\n");
-    printArray(g->end, g->endLength);
-    printf("Start:-------------------------------------------------------------------------------------\n");
-    printArray(g->start, g->startLength);
-    printf("Start Pointer------------------------------------------------------------------------------\n");
-    printArray(g->startPointer, g->startPointerLength);
-    printf("Vertices-----------------------------------------------------------------------------------\n");
-    printArray(g->vertices, g->verticesLength);
-    printf("NoV=%d\n", g->verticesLength);
-    printf("\n");
-}
 
 //Checks if value is not contained in the given array
 bool notInArray(int* arr, int size, int value){
@@ -31,15 +11,6 @@ bool notInArray(int* arr, int size, int value){
             return false;
     }
     return true;
-}
-
-void bfsTest(Graph* g, int source){
-    Array* sccList = bfs(g, source);
-
-    printf("Result: ");
-    printArray(sccList->arr, sccList->length);
-
-    free(sccList);
 }
 
 //Returns a COO array from an mtx file
@@ -164,54 +135,74 @@ CooArray* readMtxFile(char* filename){
 	return cooArray;
 }
 
+int trimStart(Graph* g, int vid){
+    int timesFoundInStart = 0;
+    for(int startIndex=0;startIndex<g->startLength;startIndex++){
+        if(g->start[startIndex] == vid){
+            //Follow the edges and check if there is a self loop
+            int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
+
+            for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
+                //If vertex has been removed
+                int endvid = g->end[endIndex];
+                if(endvid == -1){
+                    continue;
+                }
+
+                if(endvid != vid){
+                    timesFoundInStart++;
+                    break;
+                }
+            }   
+
+            if(timesFoundInStart > 0)
+                break;
+        }
+    }
+    return timesFoundInStart;
+}
+
+int trimEnd(Graph* g, int vid){
+    int timesFoundInEnd = 0;
+    for(int endIndex=0;endIndex<g->endLength;endIndex++){
+        if(g->end[endIndex] == vid){
+            timesFoundInEnd++;
+            break;
+        }
+    }
+    return timesFoundInEnd;
+}
+
 //Identifies and removes all trivial SCCs
 void trimGraph(Graph* g, int startingVertex, int endingVertex){
-    //For every vertex ID in vertices array of graph 
+    //For every vertex ID in vertices array of graph
+    int sccTrimCounter = 0;
+    
     for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
-
-        //Check if the vertex with this ID is a start of an edge
+    
         int timesFoundInStart = 0;
-        for(int startIndex=0;startIndex<g->startLength;startIndex++){
-            if(g->start[startIndex] == vid){
-                //Follow the edges and check if there is a self loop
-                int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
-
-                for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-                    //If vertex has been removed
-                    int endvid = g->end[endIndex];
-                    if(endvid == -1){
-                        continue;
-                    }
-
-                    if(endvid != vid){
-                        timesFoundInStart++;
-                        break;
-                    }
-                }   
-
-                if(timesFoundInStart > 0)
-                    break;
-            }
-        }
-
-        //Check if the vertex with this ID is an end of an edge
         int timesFoundInEnd = 0;
-        for(int endIndex=0;endIndex<g->endLength;endIndex++){
-            if(g->end[endIndex] == vid){
-                timesFoundInEnd++;
-                break;
-            }
-        }
 
+        cilk_scope{
+            //Check if the vertex with this ID is a start of an edge
+            timesFoundInStart = cilk_spawn trimStart(g, vid);
+            //Check if the vertex with this ID is an end of an edge
+            timesFoundInEnd = trimEnd(g, vid);
+        }
+        
         //If the in-degree or out-degree is zero trim the vertex
         if(timesFoundInEnd == 0 || timesFoundInStart == 0){
             //printf("Trimming vertex: %d\n", vid);
             deleteIndexfromArray(g->vertices, i);
-            sccCounter++;
-            g->numOfVertices--;
+            sccTrimCounter++;
+            // sccCounter++;
+            // g->numOfVertices--;
         }
     }
+
+    sccCounter += sccTrimCounter;
+    g->numOfVertices -= sccTrimCounter;
 
     resizeArray(g->vertices, g->verticesLength);
 }
@@ -268,18 +259,19 @@ Graph* initGraphFromCoo(CooArray* ca){
 
 //Initializes each vertex with a color which equals to its ID
 void initColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex){
-    for(int i=startingVertex;i<endingVertex;i++){
+    cilk_for(int i=startingVertex;i<endingVertex;i++){
         vertexColor[i] = -1;
 
         int vid = g->vertices[i];
         if(vid != -1)
             vertexColor[i] = vid;
-    }    
+    } 
 }
 
 //Spreads color forward following the path of the edges
 void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex){
-    for(int i=startingVertex;i<endingVertex;i++){
+    //good for parallelism
+    cilk_for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
         if(vid != -1){
             int color = vertexColor[i];
@@ -442,6 +434,10 @@ Array* findSccOfColor(Graph* g, int* vertexColor, int color){
 }
 
 void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
+    int sccUcCounter = 0;
+    int sccNumOfVertices = 0;
+
+    //TODO: make it cilk_for
     for(int i=0;i<uc->length;i++){
         // printf("Vertex Color: ");
         // printArray(vertexColor, g->verticesLength);
@@ -455,14 +451,16 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
         // printf("SccLength=%d", scc->length);
         //Count SCCs found and delete from graph all vertices contained in a SCC
         if(scc->length > 0){
-            sccCounter++;
+            sccUcCounter++;
 
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
                 deleteVertexFromGraph(g, vertexColor, vid);
-                g->numOfVertices--;
+                // g->numOfVertices--;
             }
+
+            sccNumOfVertices += scc->length;
         }
         else{
             printf("Error: Did not find any SCCs for color=%d!\n", color);
@@ -470,9 +468,12 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
         }
         free(scc);
     }
+
+    sccCounter += sccUcCounter;
+    g->numOfVertices -= sccNumOfVertices;
 }
 
-int sequentialColorScc(Graph* g, bool trimming){
+int cilkColorScc(Graph* g, bool trimming){
     sccCounter = 0;
     
     //Trim trvial SCCs to simplify the graph

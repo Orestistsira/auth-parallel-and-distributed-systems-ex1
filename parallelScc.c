@@ -52,6 +52,9 @@ void* trimStart(void* args){
                     break;
                 }
             }
+
+            if(arguments->timesFoundInStart > 0)
+                break;
         }
     }
 
