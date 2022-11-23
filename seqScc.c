@@ -164,48 +164,12 @@ CooArray* readMtxFile(char* filename){
 	return cooArray;
 }
 
-//Identifies and removes all trivial SCCs
 void trimGraph(Graph* g, int startingVertex, int endingVertex){
     //For every vertex ID in vertices array of graph 
     for(int i=startingVertex;i<endingVertex;i++){
-        int vid = g->vertices[i];
-
-        //Check if the vertex with this ID is a start of an edge
-        int timesFoundInStart = 0;
-        for(int startIndex=0;startIndex<g->startLength;startIndex++){
-            if(g->start[startIndex] == vid){
-                //Follow the edges and check if there is a self loop
-                int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
-
-                for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-                    //If vertex has been removed
-                    int endvid = g->end[endIndex];
-                    if(endvid == -1){
-                        continue;
-                    }
-
-                    if(endvid != vid){
-                        timesFoundInStart++;
-                        break;
-                    }
-                }   
-
-                if(timesFoundInStart > 0)
-                    break;
-            }
-        }
-
-        //Check if the vertex with this ID is an end of an edge
-        int timesFoundInEnd = 0;
-        for(int endIndex=0;endIndex<g->endLength;endIndex++){
-            if(g->end[endIndex] == vid){
-                timesFoundInEnd++;
-                break;
-            }
-        }
 
         //If the in-degree or out-degree is zero trim the vertex
-        if(timesFoundInEnd == 0 || timesFoundInStart == 0){
+        if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
             //printf("Trimming vertex: %d\n", vid);
             deleteIndexfromArray(g->vertices, i);
             sccCounter++;
@@ -231,6 +195,9 @@ Graph* initGraphFromCoo(CooArray* ca){
     g->vertices = (int*) malloc(ca->numOfVertices * sizeof(int));
     g->verticesLength = 0;
 
+    g->inDegree = (int*) calloc(ca->numOfVertices, sizeof(int));
+    g->outDegree = (int*) calloc(ca->numOfVertices, sizeof(int));
+
     //Find all vertices from the J (start) array
     int vid = -1;
     for(int index=0;index<ca->jLength;index++){
@@ -244,17 +211,22 @@ Graph* initGraphFromCoo(CooArray* ca){
             g->vertices[g->verticesLength] = vid;
             g->verticesLength++;
         }
+
+        int indexInVertices = getIndexOfValue(g->vertices, ca->numOfVertices, ca->j[index]);
+        g->outDegree[indexInVertices]++;
     }
 
     //Get all remaining vertices from I (end) array
-    if(g->verticesLength != ca->numOfVertices){
-        for(int i=0;i<g->endLength;i++){
-            if(notInArray(g->vertices, g->verticesLength, g->end[i])){
-                g->vertices[g->verticesLength] = g->end[i];
-                g->verticesLength++;
-            }
+    //if(g->verticesLength != ca->numOfVertices){
+    for(int i=0;i<g->endLength;i++){
+        if(notInArray(g->vertices, g->verticesLength, g->end[i])){
+            g->vertices[g->verticesLength] = g->end[i];
+            g->verticesLength++;
         }
+        int indexInVertices = getIndexOfValue(g->vertices, ca->numOfVertices, g->end[i]);
+        g->inDegree[indexInVertices]++;
     }
+    //}
     g->numOfVertices = g->verticesLength;
 
     free(ca);

@@ -1,6 +1,7 @@
 #include "bfs.h"
 #include "mmio.h"
 #include "string.h"
+#include "pthread.h"
 
 #include <cilk/cilk.h>
 

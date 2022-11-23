@@ -4,6 +4,8 @@
 int sccCounter;
 bool changedColor;
 
+pthread_mutex_t mutex;
+
 //Checks if value is not contained in the given array
 bool notInArray(int* arr, int size, int value){
     for(int i=0;i<size;i++){
@@ -135,69 +137,20 @@ CooArray* readMtxFile(char* filename){
 	return cooArray;
 }
 
-int trimStart(Graph* g, int vid){
-    int timesFoundInStart = 0;
-    for(int startIndex=0;startIndex<g->startLength;startIndex++){
-        if(g->start[startIndex] == vid){
-            //Follow the edges and check if there is a self loop
-            int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
-
-            for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-                //If vertex has been removed
-                int endvid = g->end[endIndex];
-                if(endvid == -1){
-                    continue;
-                }
-
-                if(endvid != vid){
-                    timesFoundInStart++;
-                    break;
-                }
-            }   
-
-            if(timesFoundInStart > 0)
-                break;
-        }
-    }
-    return timesFoundInStart;
-}
-
-int trimEnd(Graph* g, int vid){
-    int timesFoundInEnd = 0;
-    for(int endIndex=0;endIndex<g->endLength;endIndex++){
-        if(g->end[endIndex] == vid){
-            timesFoundInEnd++;
-            break;
-        }
-    }
-    return timesFoundInEnd;
-}
-
 //Identifies and removes all trivial SCCs
 void trimGraph(Graph* g, int startingVertex, int endingVertex){
     //For every vertex ID in vertices array of graph
     int sccTrimCounter = 0;
     
-    for(int i=startingVertex;i<endingVertex;i++){
-        int vid = g->vertices[i];
-    
-        int timesFoundInStart = 0;
-        int timesFoundInEnd = 0;
-
-        cilk_scope{
-            //Check if the vertex with this ID is a start of an edge
-            timesFoundInStart = cilk_spawn trimStart(g, vid);
-            //Check if the vertex with this ID is an end of an edge
-            timesFoundInEnd = trimEnd(g, vid);
-        }
+    cilk_for(int i=startingVertex;i<endingVertex;i++){
         
         //If the in-degree or out-degree is zero trim the vertex
-        if(timesFoundInEnd == 0 || timesFoundInStart == 0){
+        if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
             //printf("Trimming vertex: %d\n", vid);
             deleteIndexfromArray(g->vertices, i);
+            pthread_mutex_lock(&mutex);
             sccTrimCounter++;
-            // sccCounter++;
-            // g->numOfVertices--;
+            pthread_mutex_unlock(&mutex);
         }
     }
 
@@ -222,6 +175,9 @@ Graph* initGraphFromCoo(CooArray* ca){
     g->vertices = (int*) malloc(ca->numOfVertices * sizeof(int));
     g->verticesLength = 0;
 
+    g->inDegree = (int*) calloc(ca->numOfVertices, sizeof(int));
+    g->outDegree = (int*) calloc(ca->numOfVertices, sizeof(int));
+
     //Find all vertices from the J (start) array
     int vid = -1;
     for(int index=0;index<ca->jLength;index++){
@@ -235,17 +191,22 @@ Graph* initGraphFromCoo(CooArray* ca){
             g->vertices[g->verticesLength] = vid;
             g->verticesLength++;
         }
+
+        int indexInVertices = getIndexOfValue(g->vertices, ca->numOfVertices, ca->j[index]);
+        g->outDegree[indexInVertices]++;
     }
 
     //Get all remaining vertices from I (end) array
-    if(g->verticesLength != ca->numOfVertices){
-        for(int i=0;i<g->endLength;i++){
-            if(notInArray(g->vertices, g->verticesLength, g->end[i])){
-                g->vertices[g->verticesLength] = g->end[i];
-                g->verticesLength++;
-            }
+    //if(g->verticesLength != ca->numOfVertices){
+    for(int i=0;i<g->endLength;i++){
+        if(notInArray(g->vertices, g->verticesLength, g->end[i])){
+            g->vertices[g->verticesLength] = g->end[i];
+            g->verticesLength++;
         }
+        int indexInVertices = getIndexOfValue(g->vertices, ca->numOfVertices, g->end[i]);
+        g->inDegree[indexInVertices]++;
     }
+    //}
     g->numOfVertices = g->verticesLength;
 
     free(ca);
@@ -438,7 +399,7 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
     int sccNumOfVertices = 0;
 
     //TODO: make it cilk_for
-    for(int i=0;i<uc->length;i++){
+    cilk_for(int i=0;i<uc->length;i++){
         // printf("Vertex Color: ");
         // printArray(vertexColor, g->verticesLength);
 
@@ -451,7 +412,10 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
         // printf("SccLength=%d", scc->length);
         //Count SCCs found and delete from graph all vertices contained in a SCC
         if(scc->length > 0){
+            pthread_mutex_lock(&mutex);
             sccUcCounter++;
+            sccNumOfVertices += scc->length;
+            pthread_mutex_unlock(&mutex);
 
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
@@ -459,8 +423,6 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
                 deleteVertexFromGraph(g, vertexColor, vid);
                 // g->numOfVertices--;
             }
-
-            sccNumOfVertices += scc->length;
         }
         else{
             printf("Error: Did not find any SCCs for color=%d!\n", color);
@@ -475,6 +437,9 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
 
 int cilkColorScc(Graph* g, bool trimming){
     sccCounter = 0;
+
+    //Initialize mutexes
+    pthread_mutex_init(&mutex, NULL);
     
     //Trim trvial SCCs to simplify the graph
     //Can be done in parallel
@@ -534,5 +499,7 @@ int cilkColorScc(Graph* g, bool trimming){
         printf("SCCs found=%d\n", sccCounter);
         free(uc);
     }
+
+    pthread_mutex_destroy(&mutex);
     return sccCounter;
 }

@@ -8,6 +8,9 @@ typedef struct Graph{
     int* end;
     int* start;
 
+    int* inDegree;
+    int* outDegree;
+
     int verticesLength;
     int endLength;
     int startLength;

@@ -1,5 +1,5 @@
 #include <string.h>
-#include <time.h>
+#include <sys/time.h>
 
 //#include "seqScc.h"
 #include "parallelScc.h"
@@ -56,8 +56,9 @@ int main(int argc, char** argv){
     Graph* g = initGraphFromCoo(ca);
     //printGraph(g);
 
-    time_t begin = time(NULL);
+    struct timeval startwtime, endwtime;
 
+    gettimeofday (&startwtime, NULL);
     int numOfScc = 0;
     if(parallel){
         printf("Starting parallel algorithm...\n");
@@ -68,11 +69,13 @@ int main(int argc, char** argv){
         numOfScc = sequentialColorScc(g, trimming);
     }
 
-    time_t end = time(NULL);
+    gettimeofday (&endwtime, NULL);
+
+    double duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
 
     printf("[Result=%d]\n", numOfScc);
 
-    printf("[ColorScc took %ld seconds]\n", (end - begin));
+    printf("[ColorScc took %.4f seconds]\n", duration);
 
     free(g);
 
