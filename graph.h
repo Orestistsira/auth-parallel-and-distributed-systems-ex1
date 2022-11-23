@@ -23,4 +23,4 @@ typedef struct Graph{
 
 void deleteIndexfromArray(int*arr, int index);
 
-void deleteVertexFromGraph(Graph* g, int* vertexColor, int vid);
+void deleteVertexFromGraph(Graph* g, int vid);

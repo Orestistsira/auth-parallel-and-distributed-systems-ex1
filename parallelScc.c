@@ -458,7 +458,7 @@ void* parAccessUniqueColors(void* args){
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
-                deleteVertexFromGraph(g, vertexColor, vid); 
+                deleteVertexFromGraph(g, vid); 
             }
 
             sccNumOfVertices += scc->length;

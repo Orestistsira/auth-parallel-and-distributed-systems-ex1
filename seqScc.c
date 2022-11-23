@@ -212,7 +212,7 @@ Graph* initGraphFromCoo(CooArray* ca){
             g->verticesLength++;
         }
 
-        int indexInVertices = getIndexOfValue(g->vertices, ca->numOfVertices, ca->j[index]);
+        int indexInVertices = getIndexOfValue(g->vertices, g->verticesLength, ca->j[index]);
         g->outDegree[indexInVertices]++;
     }
 
@@ -223,7 +223,7 @@ Graph* initGraphFromCoo(CooArray* ca){
             g->vertices[g->verticesLength] = g->end[i];
             g->verticesLength++;
         }
-        int indexInVertices = getIndexOfValue(g->vertices, ca->numOfVertices, g->end[i]);
+        int indexInVertices = getIndexOfValue(g->vertices, g->verticesLength, g->end[i]);
         g->inDegree[indexInVertices]++;
     }
     //}
@@ -432,7 +432,7 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
-                deleteVertexFromGraph(g, vertexColor, vid);
+                deleteVertexFromGraph(g, vid);
                 g->numOfVertices--;
             }
         }
