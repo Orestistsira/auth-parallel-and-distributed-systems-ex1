@@ -11,15 +11,7 @@ typedef struct CooArray{
     int numOfVertices;
 }CooArray;
 
-void printArray(int* array, int n);
-
-void printGraph(Graph* g);
-
-int* copyArray(int* arr, int size);
-
 bool notInArray(int* arr, int size, int value);
-
-void bfsTest(Graph* g, int source);
 
 CooArray* readMtxFile(char* file);
 
