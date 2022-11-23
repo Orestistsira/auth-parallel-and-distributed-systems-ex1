@@ -53,7 +53,9 @@ int main(int argc, char** argv){
     CooArray* ca = readMtxFile(filename);
     //ca = readMtxFile("graphs/language.mtx");
     //ca = readMtxFile("graphs/eu-2005.mtx");
+    printf("Initializing Graph...\n");
     Graph* g = initGraphFromCoo(ca);
+    printf("Graph ready.\n");
     //printGraph(g);
 
     struct timeval startwtime, endwtime;

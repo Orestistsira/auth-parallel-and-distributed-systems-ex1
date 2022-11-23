@@ -319,11 +319,13 @@ Graph* createSubgraph(Graph* g, int* vc, int vcLength){
             //If start is in vc follow its edges
             int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
 
-            for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
+            //Is it faster?
+            cilk_for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
                 int endid = g->end[endIndex];
 
                 //if both vertices are in vc put them in the subgraph
                 if(!notInArray(vc, vcLength, endid)){
+                    pthread_mutex_lock(&mutex);
                     if(!startInSubgraph){
                         subg->start[subg->startLength++] = startid;
                         startInSubgraph = true;
@@ -337,6 +339,8 @@ Graph* createSubgraph(Graph* g, int* vc, int vcLength){
 
                     if(notInArray(subg->vertices, subg->verticesLength, endid))
                         subg->vertices[subg->verticesLength++] = endid;
+
+                    pthread_mutex_unlock(&mutex);
                 }
             }
         }
