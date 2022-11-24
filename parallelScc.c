@@ -58,7 +58,6 @@ void* parTrimGraph(void* args){
     g->numOfVertices -= sccTrimCounter;
     pthread_mutex_unlock(&mutexAddScc);
 
-    resizeArray(g->vertices, g->verticesLength);
     free(arguments);
 
     /* Arguments go to status */
@@ -185,40 +184,34 @@ void* parSpreadColor(void* args){
 
     for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
-        if(vid != -1){
-            int color = vertexColor[i];
-            int vid = g->vertices[i];
-
-            //Find the index of the origin vertex in the start array
-            int startIndex = getIndexOfValue(g->start, g->startLength, vid);
-
-            //if vertex is a start of an edge
-            if(startIndex != -1){
-                //Follow the edges and spread color to the end vertices
-                int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
-
-                for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-                    //If vertex has been removed
-                    int endvid = g->end[endIndex];
-                    if(endvid == -1){
-                        continue;
-                    }
-
-                    int nextColorIndex = getIndexOfValue(g->vertices, g->verticesLength, endvid);
-                    //If vertex index was not found
-                    if(nextColorIndex == -1){
-                        continue;
-                    }
-
-                    int nextColor = vertexColor[nextColorIndex];
-
-                    if(nextColor < color){
-                        vertexColor[i] = vertexColor[nextColorIndex];
-                        parChangedColor = true;
-                    }
-                }
-            }
+        if(vid == -1){
+            continue;
         } 
+
+        int color = vertexColor[vid];
+        if(color == 0)
+            continue;
+        //int vid = g->vertices[i];
+
+        int startIndex = getIndexOfValue(g->start, g->startLength, vid);
+
+        //Follow the edges and spread color to the end vertices
+        int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
+
+        for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
+            //If vertex has been removed
+            int endvid = g->vertices[g->end[endIndex]];
+            if(endvid == -1){
+                continue;
+            }
+
+            int nextColor = vertexColor[endvid];
+
+            if(nextColor < color){
+                vertexColor[vid] = vertexColor[endvid];
+                parChangedColor = true;
+            }
+        }
     }
     free(arguments);
 
@@ -262,136 +255,6 @@ void createThreadsForSpreadColor(Graph* g, int* vertexColor){
     }
 }
 
-typedef struct SubgArgs{
-    Graph* g;
-    Graph* subg;
-    int* vc;
-    int vcLength;
-    int startIndex;
-    int endIndex;
-    int id;
-}SubgArgs;
-
-void* addToSubgraph(void* args){
-    SubgArgs* arguments = (SubgArgs*) args;
-    Graph* g = arguments->g;
-    Graph* subg = arguments->subg;
-    int* vc = arguments->vc;
-    int vcLength = arguments->vcLength;
-
-    int startingVertex = arguments->startIndex;
-    int endingVertex = arguments->endIndex;
-
-    //int threadId = arguments->id;
-
-    // printf("Start of thread %d:%d\n", threadId, startingVertex);
-    // printf("End of thread %d:%d\n", threadId, endingVertex);
-
-    //For every vertex in start find if its in vc
-    for(int startIndex=startingVertex;startIndex<endingVertex;startIndex++){
-        bool startInSubgraph = false;
-        int startid = g->start[startIndex];
-
-        //if startid is in vc
-        if(!notInArray(vc, vcLength, startid)){
-            //If start is in vc follow its edges
-            int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
-
-            for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-                int endid = g->end[endIndex];
-
-                pthread_mutex_lock(&mutexAddToSubg);
-                //if both vertices are in vc put them in the subgraph
-                if(!notInArray(vc, vcLength, endid)){
-                    
-                    if(!startInSubgraph){
-                        subg->start[subg->startLength++] = startid;
-                        startInSubgraph = true;
-
-                        subg->startPointer[subg->startPointerLength++] = subg->endLength;
-
-                        if(notInArray(subg->vertices, subg->verticesLength, startid))
-                            subg->vertices[subg->verticesLength++] = startid;
-                    }
-                    subg->end[subg->endLength++] = endid;
-
-                    if(notInArray(subg->vertices, subg->verticesLength, endid))
-                        subg->vertices[subg->verticesLength++] = endid;
-
-                    
-                }
-                pthread_mutex_unlock(&mutexAddToSubg);
-            }
-        }
-    }
-
-    pthread_exit(NULL);
-}
-
-Graph* parCreateSubgraph(Graph* g, int* vc, int vcLength){
-    //Init subgraph
-    Graph* subg = (Graph*) malloc(sizeof(Graph));
-    subg->vertices = (int*) malloc(vcLength * sizeof(int));
-    subg->verticesLength = 0;
-
-    subg->end = (int*) malloc(g->endLength * sizeof(int));
-    subg->endLength = 0;
-
-    subg->start = (int*) malloc(g->startLength * sizeof(int));
-    subg->startLength = 0;
-
-    subg->startPointer = (int*) malloc(g->startPointerLength * sizeof(int));
-    subg->startPointerLength = 0;
-
-    int numOfSubgThreads = 4;
-    pthread_t thread[numOfSubgThreads];
-
-    int rc;
-	long i;
-    int local;
-    
-    //printf("StartLength=%d\n", g->startLength);
-    local = g->startLength / numOfSubgThreads + 1;
-    for(i=0;i<numOfSubgThreads;i++){
-        SubgArgs* args = (SubgArgs*) malloc(sizeof(SubgArgs));
-        args->subg = subg;
-        args->g = g;
-        args->vc = vc;
-        args->vcLength = vcLength;
-        args->startIndex = i * local;
-        args->endIndex = ((i + 1) * local) > g->startLength ? g->startLength : (i + 1) * local;
-        args->id = i;
-
-        rc = pthread_create(&thread[i], &attr, addToSubgraph, (void*)args);
-
-        if(rc){
-            printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
-            exit(-1);
-        }
-    }
-
-    for(i=0;i<numOfSubgThreads;i++){
-        rc = pthread_join(thread[i], NULL);
-        if(rc){
-            printf("ERROR; return code from pthread_join() is %d\n", rc);
-            exit(-1);
-        }
-        // printf("Main: completed join with thread %ld\n", i);
-    }
-    
-    subg->numOfVertices = subg->verticesLength;
-
-    //Resize arrays to their final size
-    resizeArray(subg->end, subg->endLength);
-    resizeArray(subg->start, subg->startLength);
-    resizeArray(subg->startPointer, subg->startPointerLength);
-
-    // printf("Subgraph:\n");
-    // printGraph(subg);
-
-    return subg;
-}
-
 //Finds the number of in a subgraph of vertices with the same color
 Array* parFindSccOfColor(Graph* g, int* vertexColor, int color){
     //Initialize an array vc for the vertices
@@ -404,7 +267,6 @@ Array* parFindSccOfColor(Graph* g, int* vertexColor, int color){
             vc[vcLength++] = g->vertices[i];
         }
     }
-    resizeArray(vc, vcLength);
 
     //If there is only one vertex with that color return the vertex
     if(vcLength == 1){
@@ -414,19 +276,12 @@ Array* parFindSccOfColor(Graph* g, int* vertexColor, int color){
         return scc;
     }
 
-    // printf("VC: ");
-    // printArray(vc, vcLength);
-
-    //Create a subgraph with the vertices contained in vc
-    Graph* subg = parCreateSubgraph(g, vc, vcLength);
-
     //Follow edges from sugraph with bfs and find the SCCs
-    Array* scc = bfs(subg, color);
+    Array* scc = bfs(g, color, vc, vcLength);
     // printf("SCC: ");
     // printArray(scc->arr, scc->length);
 
     free(vc);
-    free(subg);
 
     return scc;
 }

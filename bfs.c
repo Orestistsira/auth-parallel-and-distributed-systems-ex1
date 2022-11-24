@@ -42,8 +42,17 @@ void resizeArray(int* arr, int newSize){
     arr = temp;
 }
 
+//Checks if value is not contained in the given array
+bool notInArray(int* arr, int size, int value){
+    for(int i=0;i<size;i++){
+        if(arr[i] == value)
+            return false;
+    }
+    return true;
+}
+
 //Returns an array with the vertex IDs contained in the SCC
-Array* bfs(Graph* g, int s){
+Array* bfs(Graph* g, int s, int* vc, int vcLength){
     int n = g->verticesLength;
     //For each vertex
     bool visited[n];
@@ -59,7 +68,7 @@ Array* bfs(Graph* g, int s){
     queuePush(queue, s);
 
     //Mark source vertex as visited
-    int indexOfVertex = getIndexOfValue(g->vertices, n, s);
+    int indexOfVertex = s;
     visited[indexOfVertex] = true;
 
     Array* sccList = (Array*) malloc(sizeof(Array));
@@ -82,11 +91,12 @@ Array* bfs(Graph* g, int s){
             int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
 
             for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-                indexOfVertex = getIndexOfValue(g->vertices, n, g->end[endIndex]);
-                if(indexOfVertex == -1){
-                    printf("Error: Vertex with id=%d not found\n", g->end[endIndex]);
+                int endvid = g->vertices[g->end[endIndex]];
+                if(endvid == -1 || notInArray(vc, vcLength, endvid)){
                     continue;
                 }
+
+                int indexOfVertex = endvid;
 
                 if(visited[indexOfVertex] == false){
                     queuePush(queue, g->vertices[indexOfVertex]);

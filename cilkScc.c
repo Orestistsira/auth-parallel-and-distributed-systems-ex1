@@ -7,15 +7,6 @@ bool changedColor;
 pthread_mutex_t mutex;
 pthread_mutex_t mutexDelVertex;
 
-//Checks if value is not contained in the given array
-bool notInArray(int* arr, int size, int value){
-    for(int i=0;i<size;i++){
-        if(arr[i] == value)
-            return false;
-    }
-    return true;
-}
-
 //Returns a COO array from an mtx file
 CooArray* readMtxFile(char* filename){
     int ret_code;
@@ -174,7 +165,10 @@ Graph* initGraphFromCoo(CooArray* ca){
     g->startPointerLength = 0;
 
     g->vertices = (int*) malloc(ca->numOfVertices * sizeof(int));
-    g->verticesLength = 0;
+    g->verticesLength = ca->numOfVertices;
+    for(int i=0;i<g->verticesLength;i++){
+        g->vertices[i] = i;
+    }
 
     g->inDegree = (int*) calloc(ca->numOfVertices, sizeof(int));
     g->outDegree = (int*) calloc(ca->numOfVertices, sizeof(int));
@@ -189,33 +183,25 @@ Graph* initGraphFromCoo(CooArray* ca){
             g->startPointer[g->startPointerLength] = index;
             g->startPointerLength++;
 
-            g->vertices[g->verticesLength] = vid;
-            g->verticesLength++;
+            g->outDegree[vid]++;
         }
 
-        int indexInVertices = getIndexOfValue(g->vertices, g->verticesLength, ca->j[index]);
-        g->outDegree[indexInVertices]++;
+        //int indexInVertices = getIndexOfValue(g->vertices, g->verticesLength, ca->j[index]);
+        //g->outDegree[indexInVertices]++;
     }
 
     //Get all remaining vertices from I (end) array
-    //if(g->verticesLength != ca->numOfVertices){
     for(int i=0;i<g->endLength;i++){
-        if(notInArray(g->vertices, g->verticesLength, g->end[i])){
-            g->vertices[g->verticesLength] = g->end[i];
-            g->verticesLength++;
-        }
-        int indexInVertices = getIndexOfValue(g->vertices, g->verticesLength, g->end[i]);
-        g->inDegree[indexInVertices]++;
+        g->inDegree[g->end[i]]++;
     }
-    //}
+
     g->numOfVertices = g->verticesLength;
 
+    //mergeSort(g->vertices, 0, g->numOfVertices);
+
+    //printArray(g->vertices, g->numOfVertices);
+
     free(ca);
-
-    //Resize arrays to their length
-    resizeArray(g->start, g->startLength);
-    resizeArray(g->startPointer, g->startPointerLength);
-
     return g;
 }
 
@@ -235,40 +221,34 @@ void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVerte
     //good for parallelism
     cilk_for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
-        if(vid != -1){
-            int color = vertexColor[i];
-            int vid = g->vertices[i];
-
-            //Find the index of the origin vertex in the start array
-            int startIndex = getIndexOfValue(g->start, g->startLength, vid);
-
-            //if vertex is a start of an edge
-            if(startIndex != -1){
-                //Follow the edges and spread color to the end vertices
-                int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
-
-                for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-                    //If vertex has been removed
-                    int endvid = g->end[endIndex];
-                    if(endvid == -1){
-                        continue;
-                    }
-
-                    int nextColorIndex = getIndexOfValue(g->vertices, g->verticesLength, endvid);
-                    //If vertex index was not found
-                    if(nextColorIndex == -1){
-                        continue;
-                    }
-
-                    int nextColor = vertexColor[nextColorIndex];
-
-                    if(nextColor < color){
-                        vertexColor[i] = vertexColor[nextColorIndex];
-                        changedColor = true;
-                    }
-                }
-            }
+        if(vid == -1){
+            continue;
         } 
+
+        int color = vertexColor[vid];
+        if(color == 0)
+            continue;
+        //int vid = g->vertices[i];
+
+        int startIndex = getIndexOfValue(g->start, g->startLength, vid);
+
+        //Follow the edges and spread color to the end vertices
+        int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
+
+        for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
+            //If vertex has been removed
+            int endvid = g->vertices[g->end[endIndex]];
+            if(endvid == -1){
+                continue;
+            }
+
+            int nextColor = vertexColor[endvid];
+
+            if(nextColor < color){
+                vertexColor[vid] = vertexColor[endvid];
+                changedColor = true;
+            }
+        }
     }
 }
 
@@ -294,72 +274,6 @@ Array* findUniqueColors(int* vertexColor, int size){
     return uniqueColors;
 }
 
-//Creates a subgraph from the original graph with vertices in the given vc
-Graph* createSubgraph(Graph* g, int* vc, int vcLength){
-    //Init subgraph
-    Graph* subg = (Graph*) malloc(sizeof(Graph));
-    subg->vertices = (int*) malloc(vcLength * sizeof(int));
-    subg->verticesLength = 0;
-
-    subg->end = (int*) malloc(g->endLength * sizeof(int));
-    subg->endLength = 0;
-
-    subg->start = (int*) malloc(g->startLength * sizeof(int));
-    subg->startLength = 0;
-
-    subg->startPointer = (int*) malloc(g->startPointerLength * sizeof(int));
-    subg->startPointerLength = 0;
-
-    //For every vertex in start find if its in vc
-    for(int startIndex=0;startIndex<g->startLength;startIndex++){
-        bool startInSubgraph = false;
-        int startid = g->start[startIndex];
-
-        //if startid is in vc
-        if(!notInArray(vc, vcLength, startid)){
-            //If start is in vc follow its edges
-            int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
-
-            //Is it faster?
-            cilk_for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-                int endid = g->end[endIndex];
-
-                //if both vertices are in vc put them in the subgraph
-                if(!notInArray(vc, vcLength, endid)){
-                    pthread_mutex_lock(&mutex);
-                    if(!startInSubgraph){
-                        subg->start[subg->startLength++] = startid;
-                        startInSubgraph = true;
-
-                        subg->startPointer[subg->startPointerLength++] = subg->endLength;
-
-                        if(notInArray(subg->vertices, subg->verticesLength, startid))
-                            subg->vertices[subg->verticesLength++] = startid;
-                    }
-                    subg->end[subg->endLength++] = endid;
-
-                    if(notInArray(subg->vertices, subg->verticesLength, endid))
-                        subg->vertices[subg->verticesLength++] = endid;
-
-                    pthread_mutex_unlock(&mutex);
-                }
-            }
-        }
-    }
-
-    subg->numOfVertices = subg->verticesLength;
-
-    //Resize arrays to their final size
-    resizeArray(subg->end, subg->endLength);
-    resizeArray(subg->start, subg->startLength);
-    resizeArray(subg->startPointer, subg->startPointerLength);
-
-    // printf("Subgraph:\n");
-    // printGraph(subg);
-
-    return subg;
-}
-
 //Finds the number of in a subgraph of vertices with the same color
 Array* findSccOfColor(Graph* g, int* vertexColor, int color){
     //Initialize an array vc for the vertices
@@ -372,7 +286,6 @@ Array* findSccOfColor(Graph* g, int* vertexColor, int color){
             vc[vcLength++] = g->vertices[i];
         }
     }
-    resizeArray(vc, vcLength);
 
     //If there is only one vertex with that color return the vertex
     if(vcLength == 1){
@@ -385,16 +298,12 @@ Array* findSccOfColor(Graph* g, int* vertexColor, int color){
     // printf("VC: ");
     // printArray(vc, vcLength);
 
-    //Create a subgraph with the vertices contained in vc
-    Graph* subg = createSubgraph(g, vc, vcLength);
-
     //Follow edges from sugraph with bfs and find the SCCs
-    Array* scc = bfs(subg, color);
+    Array* scc = bfs(g, color, vc, vcLength);
     // printf("SCC: ");
     // printArray(scc->arr, scc->length);
 
     free(vc);
-    free(subg);
 
     return scc;
 }
@@ -440,6 +349,13 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
     g->numOfVertices -= sccNumOfVertices;
 }
 
+void printArray(int* array, int n){
+    for(int i=0;i<n;i++){
+        printf("%d ", array[i]);
+    }
+    printf("\n");
+}
+
 int cilkColorScc(Graph* g, bool trimming){
     sccCounter = 0;
 
@@ -474,7 +390,6 @@ int cilkColorScc(Graph* g, bool trimming){
         //Can be done in Parallel
         initColor(g, vertexColor, 0, n);
         // printf("Vertex Color: ");
-        // printArray(vertexColor, g->verticesLength);
 
         //Spread vertex color fw until there are no changes in vertexColor
         changedColor = true;
@@ -489,7 +404,6 @@ int cilkColorScc(Graph* g, bool trimming){
         printf("Spreading color ended\n");
 
         // printf("Vertex Color: ");
-        // printArray(vertexColor, g->verticesLength);
 
         //Find all unique colors left in the vertexColor array
         Array* uc = findUniqueColors(vertexColor, n);

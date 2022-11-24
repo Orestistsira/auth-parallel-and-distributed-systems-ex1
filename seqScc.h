@@ -1,6 +1,7 @@
 #include "bfs.h"
 #include "mmio.h"
 #include "string.h"
+#include <sys/time.h>
 
 typedef struct CooArray{
     int* i;

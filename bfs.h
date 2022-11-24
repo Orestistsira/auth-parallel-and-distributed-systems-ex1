@@ -26,4 +26,8 @@ int getIndexOfValue(int* array, int n, int value);
 
 void resizeArray(int* arr, int newSize);
 
-Array* bfs(Graph* g, int s);
+bool notInArray(int* arr, int size, int value);
+
+//Array* bfs(Graph* g, int s);
+
+Array* bfs(Graph* g, int s, int* vc, int vcLength);

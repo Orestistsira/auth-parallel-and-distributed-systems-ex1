@@ -1,5 +1,4 @@
 #include <string.h>
-#include <sys/time.h>
 
 //#include "seqScc.h"
 #include "parallelScc.h"
@@ -49,17 +48,22 @@ int main(int argc, char** argv){
         exit(1);
     }
 
+    struct timeval startwtime, endwtime;
+    double duration;
+
     //ca = readMtxFile("graphs/celegansneural.mtx");
     CooArray* ca = readMtxFile(filename);
     //ca = readMtxFile("graphs/language.mtx");
     //ca = readMtxFile("graphs/eu-2005.mtx");
     printf("Initializing Graph...\n");
+    gettimeofday (&startwtime, NULL);
     Graph* g = initGraphFromCoo(ca);
-    printf("Graph ready.\n");
+    gettimeofday (&endwtime, NULL);
+    duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+    printf("Graph ready in %.4f seconds.\n", duration);
     //printGraph(g);
 
-    struct timeval startwtime, endwtime;
-
+    
     gettimeofday (&startwtime, NULL);
     int numOfScc = 0;
     if(parallel){
@@ -73,7 +77,7 @@ int main(int argc, char** argv){
 
     gettimeofday (&endwtime, NULL);
 
-    double duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+    duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
 
     printf("[Result=%d]\n", numOfScc);
 
