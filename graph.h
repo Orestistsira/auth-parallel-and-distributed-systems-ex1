@@ -7,6 +7,7 @@ typedef struct Graph{
     int* startPointer; //points to where start values begin
     int* end;
     int* start;
+    int* vertexPosInStart;
 
     int* inDegree;
     int* outDegree;

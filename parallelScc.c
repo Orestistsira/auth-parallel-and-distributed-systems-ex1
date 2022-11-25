@@ -193,7 +193,7 @@ void* parSpreadColor(void* args){
             continue;
         //int vid = g->vertices[i];
 
-        int startIndex = getIndexOfValue(g->start, g->startLength, vid);
+        int startIndex = g->vertexPosInStart[vid];
 
         //Follow the edges and spread color to the end vertices
         int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
@@ -255,37 +255,6 @@ void createThreadsForSpreadColor(Graph* g, int* vertexColor){
     }
 }
 
-//Finds the number of in a subgraph of vertices with the same color
-Array* parFindSccOfColor(Graph* g, int* vertexColor, int color){
-    //Initialize an array vc for the vertices
-    int* vc = (int*) malloc(g->verticesLength * sizeof(int));
-    int vcLength = 0;
-
-    //Append in vc all vertices with the current color
-    for(int i=0;i<g->verticesLength;i++){
-        if(vertexColor[i] == color){
-            vc[vcLength++] = g->vertices[i];
-        }
-    }
-
-    //If there is only one vertex with that color return the vertex
-    if(vcLength == 1){
-        Array* scc = (Array*) malloc(sizeof(Array));
-        scc->arr = vc;
-        scc->length = vcLength;
-        return scc;
-    }
-
-    //Follow edges from sugraph with bfs and find the SCCs
-    Array* scc = bfs(g, color, vc, vcLength);
-    // printf("SCC: ");
-    // printArray(scc->arr, scc->length);
-
-    free(vc);
-
-    return scc;
-}
-
 void* parAccessUniqueColors(void* args){
     //Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor
 
@@ -303,7 +272,7 @@ void* parAccessUniqueColors(void* args){
         int color = uc->arr[i];
 
         //Find all vertexes with color and put them in vc
-        Array* scc = findSccOfColor(g, vertexColor, color);
+        Array* scc = bfs(g, color, vertexColor);
 
         // printf("SccLength=%d", scc->length);
         //Count SCCs found and delete from graph all vertices contained in a SCC
@@ -375,6 +344,9 @@ void createThreadsForUniqueColor(Graph* g, Array* uc, int* vertexColor){
 }
 
 int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
+    struct timeval startwtime, endwtime;
+    double duration;
+
     //Init threads
     numOfThreads = givenNumOfThreads;
     printf("Number of threads=%d\n", numOfThreads);
@@ -393,8 +365,11 @@ int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
     
     if(trimming){
         printf("Trimming...\n");
+        gettimeofday (&startwtime, NULL);
         createThreadsForTrim(g);
-        printf("Trimming ended\n");
+        gettimeofday (&endwtime, NULL);
+        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+        printf("Trimming ended in %.4f seconds\n", duration);
     }
 
     //Init VertexColor array
@@ -426,12 +401,15 @@ int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
         //Spread vertex color fw until there are no changes in vertexColor
         parChangedColor = true;
         printf("Spreading color...\n");
+        gettimeofday (&startwtime, NULL);
         while(parChangedColor){
             
             parChangedColor = false;
             createThreadsForSpreadColor(g, vertexColor);
         }    
-        printf("Spreading color ended.\n");
+        gettimeofday (&endwtime, NULL);
+        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+        printf("Spreading color ended in %.4f seconds\n", duration);
 
         // printf("Vertex Color: ");
         // printArray(vertexColor, g->verticesLength);
@@ -445,12 +423,15 @@ int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
         printf("Finding scc number...\n");
         //For each unique color, do BFS for the for the subgraph with that color
         //Can be done in parallel
+        gettimeofday (&startwtime, NULL);
         createThreadsForUniqueColor(g, uc, vertexColor);
         
         //parAccessUniqueColors(g, uc, vertexColor, 0, uc->length);
+        gettimeofday (&endwtime, NULL);
+        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
 
         printf("NumOfVertices=%d\n", g->numOfVertices);
-        printf("SCCs found=%d\n", parSccCounter);
+        printf("SCCs found=%d in %.4f seconds\n", parSccCounter, duration);
         free(uc);
     }
 

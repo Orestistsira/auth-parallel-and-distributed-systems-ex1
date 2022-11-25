@@ -172,9 +172,11 @@ Graph* initGraphFromCoo(CooArray* ca){
     g->startPointerLength = 0;
 
     g->vertices = (int*) malloc(ca->numOfVertices * sizeof(int));
+    g->vertexPosInStart = (int*) malloc(ca->numOfVertices * sizeof(int));
     g->verticesLength = ca->numOfVertices;
     for(int i=0;i<g->verticesLength;i++){
         g->vertices[i] = i;
+        g->vertexPosInStart[i] = -1;
     }
 
     g->inDegree = (int*) calloc(ca->numOfVertices, sizeof(int));
@@ -186,6 +188,7 @@ Graph* initGraphFromCoo(CooArray* ca){
         if(vid != ca->j[index]){
             vid = ca->j[index];
             g->start[g->startLength] = vid;
+            g->vertexPosInStart[vid] = g->startLength;
             g->startLength++;
             g->startPointer[g->startPointerLength] = index;
             g->startPointerLength++;
@@ -206,7 +209,7 @@ Graph* initGraphFromCoo(CooArray* ca){
 
     //mergeSort(g->vertices, 0, g->numOfVertices);
 
-    //printArray(g->vertices, g->numOfVertices);
+    //printArray(g->vertexPosInStart, g->numOfVertices);
 
     free(ca);
     return g;
@@ -235,7 +238,10 @@ void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVerte
             continue;
         //int vid = g->vertices[i];
 
-        int startIndex = getIndexOfValue(g->start, g->startLength, vid);
+        //TODO: store start index of each vertex from init 
+        //int startIndex = getIndexOfValue(g->start, g->startLength, vid);
+        int startIndex = g->vertexPosInStart[vid];
+        //if(startIndex == -1) continue;
 
         //Follow the edges and spread color to the end vertices
         int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
@@ -277,34 +283,6 @@ Array* findUniqueColors(int* vertexColor, int size){
     return uniqueColors;
 }
 
-//Finds the number of in a subgraph of vertices with the same color
-Array* findSccOfColor(Graph* g, int* vertexColor, int color){
-    //Initialize an array vc for the vertices
-    int* vc = (int*) malloc(g->verticesLength * sizeof(int));
-    int vcLength = 0;
-
-    //Append in vc all vertices with the current color
-    for(int i=0;i<g->verticesLength;i++){
-        if(vertexColor[i] == color){
-            vc[vcLength++] = g->vertices[i];
-        }
-    }
-
-    //If there is only one vertex with that color return the vertex
-    if(vcLength == 1){
-        Array* scc = (Array*) malloc(sizeof(Array));
-        scc->arr = vc;
-        scc->length = vcLength;
-        return scc;
-    }
-
-    Array* scc = bfs(g, color, vc, vcLength);
-
-    free(vc);
-
-    return scc;
-}
-
 void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
     for(int i=0;i<uc->length;i++){
         // printf("Vertex Color: ");
@@ -314,7 +292,7 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
 
         // printf("Color:%d\n", color);
         //Find all vertexes with color and put them in vc
-        Array* scc = findSccOfColor(g, vertexColor, color);
+        Array* scc = bfs(g, color, vertexColor);
 
         // printf("SccLength=%d", scc->length);
         //Count SCCs found and delete from graph all vertices contained in a SCC
@@ -391,10 +369,14 @@ int sequentialColorScc(Graph* g, bool trimming){
         
         printf("Spreading color ended in %.4f seconds\n", duration);
 
+
+        printf("Finding unique colors...\n");
+        gettimeofday (&startwtime, NULL);
         //Find all unique colors left in the vertexColor array
         Array* uc = findUniqueColors(vertexColor, n);
-
-        printf("Number of Unique colors=%d\n", uc->length);
+        gettimeofday (&endwtime, NULL);
+        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+        printf("Number of Unique colors=%d, found in %.4f seconds\n", uc->length, duration);
 
         printf("Finding scc number...\n");
         gettimeofday (&startwtime, NULL);

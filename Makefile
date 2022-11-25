@@ -4,7 +4,7 @@ CC       = gcc
 FLAGS    = -O3 -pthread
 
 CLANG    = /opt/opencilk/bin/clang
-C_FLAGS  = -O3 -fopencilk -fcilktool=cilkscale -pthread
+C_FLAGS  = -O3 -fopencilk -pthread -fcilktool=cilkscale
 
 scc: main.c seqScc.c parallelScc.c bfs.c graph.c mmio.c
 	$(CC) $(FLAGS) main.c seqScc.c parallelScc.c bfs.c graph.c mmio.c -o colorScc

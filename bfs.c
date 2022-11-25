@@ -52,10 +52,11 @@ bool notInArray(int* arr, int size, int value){
 }
 
 //Returns an array with the vertex IDs contained in the SCC
-Array* bfs(Graph* g, int s, int* vc, int vcLength){
+Array* bfs(Graph* g, int s, int* vertexColor){
     int n = g->verticesLength;
     //For each vertex
     bool visited[n];
+    int color = s;
 
     //Mark all vertices as not visited
     for(int i=0;i<n;i++){
@@ -84,7 +85,9 @@ Array* bfs(Graph* g, int s, int* vc, int vcLength){
         sccList->length++;
 
         //Get all the adjacent vertices of s and enqueue them if not visited
-        int startIndex = getIndexOfValue(g->start, g->startLength, s);
+        //TODO: store start index of each vertex from init
+        //int startIndex = getIndexOfValue(g->start, g->startLength, s);
+        int startIndex = g->vertexPosInStart[s];
 
         //if vertex is a start of an edge
         if(startIndex != -1){
@@ -92,7 +95,7 @@ Array* bfs(Graph* g, int s, int* vc, int vcLength){
 
             for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
                 int endvid = g->vertices[g->end[endIndex]];
-                if(endvid == -1 || notInArray(vc, vcLength, endvid)){
+                if(endvid == -1 || vertexColor[endvid] != color){
                     continue;
                 }
 

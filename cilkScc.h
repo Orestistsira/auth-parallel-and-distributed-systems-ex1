@@ -30,8 +30,6 @@ Array* findUniqueColors(int* vertexColor, int size);
 
 Graph* createSubgraph(Graph* g, int* vc, int vcLength);
 
-Array* findSccOfColor(Graph* g, int* vertexColor, int color);
-
 void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor);
 
 int cilkColorScc(Graph* g, bool trimming);
