@@ -18,7 +18,7 @@ int main(int argc, char** argv){
     bool parallel = false;
     bool trimming = false;
     int givenNumOfThreads = 10;
-    if(argc == 5){
+    if(argc == 4){
         filename = argv[1];
         
         if(!strcmp("trimming", argv[2]))
@@ -35,9 +35,6 @@ int main(int argc, char** argv){
             parallel = false;
         else
             printf("Error in arguments!\n");
-
-
-        givenNumOfThreads = atoi(argv[4]);
 
     }
     else if(argc == 2){

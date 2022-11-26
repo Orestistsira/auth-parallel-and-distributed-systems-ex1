@@ -276,7 +276,7 @@ void* parAccessUniqueColors(void* args){
 
         // printf("SccLength=%d", scc->length);
         //Count SCCs found and delete from graph all vertices contained in a SCC
-        if(scc->length > 0){     
+        if(scc->length > 0){
             sccUcCounter++;
 
             //Delete each vertex with if found in scc

@@ -2,7 +2,7 @@
 
 make scc
 
-./colorScc graph-name [trimming/no-trimming] [sequential/parallel] [number of threads]
+./colorScc graph-name [trimming/no-trimming] [sequential/parallel]
 
 (default = no-trimming, default = sequential, default = 10 threads)
 
@@ -10,3 +10,8 @@ make scc
 make cilk
 
 ./cilkScc graph-name
+
+
+make openmp
+
+./opempScc graph-name

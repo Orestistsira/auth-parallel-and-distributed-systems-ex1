@@ -1,4 +1,4 @@
-#include "cilkScc.h"
+#include "openmpScc.h"
 
 //global vars
 int sccCounter;
@@ -134,7 +134,7 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
     //For every vertex ID in vertices array of graph
     int sccTrimCounter = 0;
     
-    cilk_for(int i=startingVertex;i<endingVertex;i++){
+    for(int i=startingVertex;i<endingVertex;i++){
         
         //If the in-degree or out-degree is zero trim the vertex
         if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
@@ -210,7 +210,7 @@ Graph* initGraphFromCoo(CooArray* ca){
 
 //Initializes each vertex with a color which equals to its ID
 void initColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex){
-    cilk_for(int i=startingVertex;i<endingVertex;i++){
+    for(int i=startingVertex;i<endingVertex;i++){
         vertexColor[i] = -1;
 
         int vid = g->vertices[i];
@@ -222,7 +222,7 @@ void initColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex)
 //Spreads color forward following the path of the edges
 void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex){
     //good for parallelism
-    cilk_for(int i=startingVertex;i<endingVertex;i++){
+    for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
         if(vid == -1){
             continue;
@@ -325,7 +325,7 @@ void printArray(int* array, int n){
     printf("\n");
 }
 
-int cilkColorScc(Graph* g, bool trimming){
+int openmpColorScc(Graph* g, bool trimming){
     sccCounter = 0;
 
     //Initialize mutexes

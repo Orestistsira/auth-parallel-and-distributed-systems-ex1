@@ -56,7 +56,8 @@ Array* bfs(Graph* g, int s, int* vertexColor){
     
     int n = g->verticesLength;
     //For each vertex
-    bool visited[n];
+    //bool visited[n];
+    bool* visited = (bool*) malloc(n * sizeof(int));
     int color = s;
 
     //Mark all vertices as not visited
@@ -113,6 +114,7 @@ Array* bfs(Graph* g, int s, int* vertexColor){
     }
 
     free(queue);
+    free(visited);
     //resizeArray(sccList->arr, sccList->length);
 
     //printf("end bfs\n");
