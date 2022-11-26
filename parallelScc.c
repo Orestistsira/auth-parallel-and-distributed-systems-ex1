@@ -282,7 +282,7 @@ void* parAccessUniqueColors(void* args){
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
-                deleteVertexFromGraph(g, vid); 
+                deleteVertexFromGraph(g, vid);
             }
 
             sccNumOfVertices += scc->length;
@@ -416,15 +416,19 @@ int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
 
         //Find all unique colors left in the vertexColor array
         //Can be done in parallel?
+        printf("Finding unique colors...\n");
+        gettimeofday (&startwtime, NULL);
         Array* uc = findUniqueColors(vertexColor, n);
-
-        printf("Number of Unique colors=%d\n", uc->length);
+        gettimeofday (&endwtime, NULL);
+        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+        printf("Number of Unique colors=%d, found in %.4f seconds\n", uc->length, duration);
 
         printf("Finding scc number...\n");
         //For each unique color, do BFS for the for the subgraph with that color
         //Can be done in parallel
         gettimeofday (&startwtime, NULL);
         createThreadsForUniqueColor(g, uc, vertexColor);
+        //accessUniqueColors(g, uc, vertexColor, 0, uc->length);
         
         //parAccessUniqueColors(g, uc, vertexColor, 0, uc->length);
         gettimeofday (&endwtime, NULL);
@@ -435,10 +439,12 @@ int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
         free(uc);
     }
 
-    return parSccCounter;
-    pthread_exit(NULL);
+    free(vertexColor);
+
     pthread_mutex_destroy(&mutexAddScc);
     pthread_mutex_destroy(&mutexAddToSubg);
     pthread_mutex_destroy(&mutexDeleteVertex);
     pthread_attr_destroy(&attr);
+
+    return parSccCounter;
 }

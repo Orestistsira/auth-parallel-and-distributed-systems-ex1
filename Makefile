@@ -1,10 +1,10 @@
 SHELL := /bin/bash
 
 CC       = gcc
-FLAGS    = -O3 -pthread
+FLAGS    = -O3 -pthread -g
 
 CLANG    = /opt/opencilk/bin/clang
-C_FLAGS  = -O3 -fopencilk -pthread -fcilktool=cilkscale
+C_FLAGS  = -O3 -fopencilk -pthread -fcilktool=cilkscale -g
 
 scc: main.c seqScc.c parallelScc.c bfs.c graph.c mmio.c
 	$(CC) $(FLAGS) main.c seqScc.c parallelScc.c bfs.c graph.c mmio.c -o colorScc

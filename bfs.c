@@ -53,6 +53,7 @@ bool notInArray(int* arr, int size, int value){
 
 //Returns an array with the vertex IDs contained in the SCC
 Array* bfs(Graph* g, int s, int* vertexColor){
+    
     int n = g->verticesLength;
     //For each vertex
     bool visited[n];
@@ -68,6 +69,8 @@ Array* bfs(Graph* g, int s, int* vertexColor){
     queueInit(queue, n);
     queuePush(queue, s);
 
+    //printf("bfs\n");
+
     //Mark source vertex as visited
     int indexOfVertex = s;
     visited[indexOfVertex] = true;
@@ -78,7 +81,7 @@ Array* bfs(Graph* g, int s, int* vertexColor){
 
     while(queue->qStart != queue->qEnd){
         //Dequeue the first vertex from queue
-        s = queuePop(queue);
+        int s = queuePop(queue);
 
         //Put the vertex id on the ssc list
         sccList->arr[sccList->length] = s;
@@ -109,7 +112,10 @@ Array* bfs(Graph* g, int s, int* vertexColor){
         }
     }
 
-    resizeArray(sccList->arr, sccList->length);
+    free(queue);
+    //resizeArray(sccList->arr, sccList->length);
+
+    //printf("end bfs\n");
 
     return sccList;
 }

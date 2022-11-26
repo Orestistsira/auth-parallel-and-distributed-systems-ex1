@@ -282,7 +282,7 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
     int sccNumOfVertices = 0;
 
     //TODO: make it cilk_for
-    cilk_for(int i=0;i<uc->length;i++){
+    for(int i=startingColor;i<endingColor;i++){
         // printf("Vertex Color: ");
         // printArray(vertexColor, g->verticesLength);
 

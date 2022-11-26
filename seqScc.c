@@ -390,5 +390,7 @@ int sequentialColorScc(Graph* g, bool trimming){
         printf("SCCs found=%d in %.4f seconds\n", sccCounter, duration);
         free(uc);
     }
+    free(vertexColor);
+
     return sccCounter;
 }
