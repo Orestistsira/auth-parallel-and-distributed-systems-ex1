@@ -142,6 +142,7 @@ CooArray* readMtxFile(char* filename){
     cooArray->jLength = nz;
     cooArray->numOfVertices = M;
     printf("\n");
+    free(val);
 
 	return cooArray;
 }
