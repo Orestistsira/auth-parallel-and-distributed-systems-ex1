@@ -36,6 +36,13 @@ int main(int argc, char** argv){
 
     printf("[ColorScc took %.4f seconds]\n", duration);
 
+    free(g->start);
+    free(g->startPointer);
+    free(g->vertices);
+    free(g->vertexPosInStart);
+    free(g->end);
+    free(g->inDegree);
+    free(g->outDegree);
     free(g);
 
     return 0;

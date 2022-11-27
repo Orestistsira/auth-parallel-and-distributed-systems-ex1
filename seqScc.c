@@ -212,6 +212,7 @@ Graph* initGraphFromCoo(CooArray* ca){
 
     //printArray(g->vertexPosInStart, g->numOfVertices);
 
+    free(ca->j);
     free(ca);
     return g;
 }
@@ -285,15 +286,34 @@ Array* findUniqueColors(int* vertexColor, int size){
 }
 
 void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
+    int n = g->verticesLength;
+    Queue* queue = (Queue*) malloc(sizeof(Queue));
+    if(queue == NULL)
+        printf("ERROR in queue malloc");
+
+    queueInit(queue, n);
+
+    Array* scc = (Array*) malloc(sizeof(Array));
+    if(scc == NULL)
+        printf("ERROR in scc malloc");
+    scc->arr = (int*) malloc(n * sizeof(int));
+    if(scc->arr == NULL)
+        printf("ERROR in scc array malloc");
+    scc->length = 0;
+
     for(int i=0;i<uc->length;i++){
         // printf("Vertex Color: ");
         // printArray(vertexColor, g->verticesLength);
 
         int color = uc->arr[i];
 
+        queue->qStart = 0;
+        queue->qEnd = 0;
+        scc->length = 0;
+
         // printf("Color:%d\n", color);
         //Find all vertexes with color and put them in vc
-        Array* scc = bfs(g, color, vertexColor);
+        bfs(g, color, vertexColor, queue, scc);
 
         // printf("SccLength=%d", scc->length);
         //Count SCCs found and delete from graph all vertices contained in a SCC
@@ -311,8 +331,12 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
             printf("Error: Did not find any SCCs for color=%d!\n", color);
             exit(1);
         }
-        free(scc);
+
     }
+    free(scc->arr);
+    free(scc);
+    free(queue->arr);
+    free(queue);
 }
 
 int sequentialColorScc(Graph* g, bool trimming){
@@ -389,6 +413,8 @@ int sequentialColorScc(Graph* g, bool trimming){
 
         printf("NumOfVertices=%d\n", g->numOfVertices);
         printf("SCCs found=%d in %.4f seconds\n", sccCounter, duration);
+
+        free(uc->arr);
         free(uc);
     }
     free(vertexColor);

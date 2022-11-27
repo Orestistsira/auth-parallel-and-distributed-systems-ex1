@@ -30,4 +30,4 @@ bool notInArray(int* arr, int size, int value);
 
 //Array* bfs(Graph* g, int s);
 
-Array* bfs(Graph* g, int s, int* vertexColor);
+void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList);

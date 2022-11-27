@@ -4,6 +4,8 @@
 void queueInit(Queue* queue, int size){
     queue->qSize = size;
     queue->arr = (int*) malloc(queue->qSize * sizeof(int));
+    if(queue->arr == NULL)
+        printf("ERROR in queue array malloc");
     queue->qStart = 0;
     queue->qEnd = 0;
 }
@@ -52,11 +54,11 @@ bool notInArray(int* arr, int size, int value){
 }
 
 //Returns an array with the vertex IDs contained in the SCC
-Array* bfs(Graph* g, int s, int* vertexColor){
+void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
     
     int n = g->verticesLength;
     //For each vertex
-    //bool visited[n];
+    // bool visited[n];
     bool* visited = (bool*) malloc(n * sizeof(int));
     int color = s;
 
@@ -66,19 +68,13 @@ Array* bfs(Graph* g, int s, int* vertexColor){
     }
 
     //Create a queue for bfs
-    Queue* queue = (Queue*) malloc(sizeof(Queue));
-    queueInit(queue, n);
+    if(queue->arr == 0)
+        printf("ERROR in queue array init");
     queuePush(queue, s);
-
-    //printf("bfs\n");
 
     //Mark source vertex as visited
     int indexOfVertex = s;
     visited[indexOfVertex] = true;
-
-    Array* sccList = (Array*) malloc(sizeof(Array));
-    sccList->arr = (int*) malloc(n * sizeof(int));
-    sccList->length = 0;
 
     while(queue->qStart != queue->qEnd){
         //Dequeue the first vertex from queue
@@ -113,76 +109,65 @@ Array* bfs(Graph* g, int s, int* vertexColor){
         }
     }
 
-    free(queue);
     free(visited);
+
     //resizeArray(sccList->arr, sccList->length);
 
     //printf("end bfs\n");
+}
+
+Array* cilkBfs(Graph* g, int s){
+    int n = g->verticesLength;
+    //For each vertex
+    bool visited[n];
+
+    //Mark all vertices as not visited
+    for(int i=0;i<n;i++){
+        visited[i] = false;
+    }
+
+    //Create a queue for bfs
+    Queue* queue = (Queue*) malloc(sizeof(Queue));
+    queueInit(queue, n);
+    queuePush(queue, s);
+
+    //Mark source vertex as visited
+    int indexOfVertex = getIndexOfValue(g->vertices, n, s);
+    visited[indexOfVertex] = true;
+
+    Array* sccList = (Array*) malloc(sizeof(Array));
+    sccList->arr = (int*) malloc(n * sizeof(int));
+    sccList->length = 0;
+
+    while(queue->qStart != queue->qEnd){
+        //Dequeue the first vertex from queue
+        s = queuePop(queue);
+
+        //Put the vertex id on the ssc list
+        sccList->arr[sccList->length] = s;
+        sccList->length++;
+
+        //Get all the adjacent vertices of s and enqueue them if not visited
+        int startIndex = getIndexOfValue(g->start, g->startLength, s);
+
+        //if vertex is a start of an edge
+        if(startIndex != -1){
+            int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
+
+            for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
+                indexOfVertex = getIndexOfValue(g->vertices, n, g->end[endIndex]);
+                if(indexOfVertex == -1){
+                    printf("Error: Vertex with id=%d not found\n", g->end[endIndex]);
+                    continue;
+                }
+
+                if(visited[indexOfVertex] == false){
+                    queuePush(queue, g->vertices[indexOfVertex]);
+                    visited[indexOfVertex] = true;
+                }
+            }
+        }
+    }
 
     return sccList;
 }
-
-// Array* cilkBfs(Graph* g, int s){
-//     pthread_mutex_t mutex;
-//     //Initialize mutexes
-//     pthread_mutex_init(&mutex, NULL);
-
-//     int n = g->verticesLength;
-//     //For each vertex
-//     bool visited[n];
-
-//     //Mark all vertices as not visited
-//     for(int i=0;i<n;i++){
-//         visited[i] = false;
-//     }
-
-//     //Create a queue for bfs
-//     Queue* queue = (Queue*) malloc(sizeof(Queue));
-//     queueInit(queue, n);
-//     queuePush(queue, s);
-
-//     //Mark source vertex as visited
-//     int indexOfVertex = getIndexOfValue(g->vertices, n, s);
-//     visited[indexOfVertex] = true;
-
-//     Array* sccList = (Array*) malloc(sizeof(Array));
-//     sccList->arr = (int*) malloc(n * sizeof(int));
-//     sccList->length = 0;
-
-//     while(queue->qStart != queue->qEnd){
-//         //Dequeue the first vertex from queue
-//         s = queuePop(queue);
-
-//         //Put the vertex id on the ssc list
-//         sccList->arr[sccList->length] = s;
-//         sccList->length++;
-
-//         //Get all the adjacent vertices of s and enqueue them if not visited
-//         int startIndex = getIndexOfValue(g->start, g->startLength, s);
-
-//         //if vertex is a start of an edge
-//         if(startIndex != -1){
-//             int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
-
-//             cilk_for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-//                 indexOfVertex = getIndexOfValue(g->vertices, n, g->end[endIndex]);
-//                 if(indexOfVertex == -1){
-//                     printf("Error: Vertex with id=%d not found\n", g->end[endIndex]);
-//                     continue;
-//                 }
-
-//                 if(visited[indexOfVertex] == false){
-//                     pthread_mutex_lock(&mutex);
-//                     queuePush(queue, g->vertices[indexOfVertex]);
-//                     visited[indexOfVertex] = true;
-//                     pthread_mutex_unlock(&mutex);
-//                 }
-//             }
-//         }
-//     }
-
-//     resizeArray(sccList->arr, sccList->length);
-//     pthread_mutex_destroy(&mutex);
-
-//     return sccList;
-// }
