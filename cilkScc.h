@@ -2,6 +2,7 @@
 #include "mmio.h"
 #include "string.h"
 #include "pthread.h"
+#include "sys/time.h"
 
 #include <cilk/cilk.h>
 

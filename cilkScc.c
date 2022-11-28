@@ -258,24 +258,111 @@ void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVerte
     }
 }
 
+void merge(int arr[], int l, int m, int r)
+{
+	int i, j, k;
+	int n1 = m - l + 1;
+	int n2 = r - m;
+
+	/* create temp arrays */
+	// int L[n1], R[n2];
+    int* L = (int*) malloc(n1 * sizeof(int));
+    int* R = (int*) malloc(n2 * sizeof(int));
+
+	/* Copy data to temp arrays L[] and R[] */
+	for (i = 0; i < n1; i++)
+		L[i] = arr[l + i];
+	for (j = 0; j < n2; j++)
+		R[j] = arr[m + 1 + j];
+
+	/* Merge the temp arrays back into arr[l..r]*/
+	i = 0; // Initial index of first subarray
+	j = 0; // Initial index of second subarray
+	k = l; // Initial index of merged subarray
+	while (i < n1 && j < n2) {
+		if (L[i] <= R[j]) {
+			arr[k] = L[i];
+			i++;
+		}
+		else {
+			arr[k] = R[j];
+			j++;
+		}
+		k++;
+	}
+
+	/* Copy the remaining elements of L[], if there
+	are any */
+	while (i < n1) {
+		arr[k] = L[i];
+		i++;
+		k++;
+	}
+
+	/* Copy the remaining elements of R[], if there
+	are any */
+	while (j < n2) {
+		arr[k] = R[j];
+		j++;
+		k++;
+	}
+
+    free(L);
+    free(R);
+}
+
+/* l is for left index and r is right index of the
+sub-array of arr to be sorted */
+void mergeSort(int arr[], int l, int r)
+{
+	if (l < r) {
+		// Same as (l+r)/2, but avoids overflow for
+		// large l and h
+		int m = l + (r - l) / 2;
+
+		// Sort first and second halves
+		mergeSort(arr, l, m);
+		mergeSort(arr, m + 1, r);
+
+		merge(arr, l, m, r);
+	}
+}
+
+int* copyArray(int const* src, int len)
+{
+   int* p = malloc(len * sizeof(int));
+   if(p == NULL)
+    printf("Error: malloc failed in copy array\n");
+   memcpy(p, src, len * sizeof(int));
+   return p;
+}
+
 //Returns all unique colors contained in vertexColor array
 Array* findUniqueColors(int* vertexColor, int size){
     Array* uniqueColors = (Array*) malloc(sizeof(Array));
     uniqueColors->arr = (int*) malloc(size * sizeof(int));
     uniqueColors->length = 0;
 
+    int* temp = copyArray(vertexColor, size);
+
+    //printArray(temp, size);
+    mergeSort(temp, 0, size - 1);
+
+    //printArray(temp, size);
+
     for(int i=0;i<size;i++){
-        int color = vertexColor[i];
+        int color = temp[i];
         if(color == -1){
             continue;
         }
 
-        if(notInArray(uniqueColors->arr, uniqueColors->length, color)){
-            uniqueColors->arr[uniqueColors->length++] = color;
-        }
+        while(i < size - 1 && temp[i] == temp[i+1])
+            i++;
+
+        uniqueColors->arr[uniqueColors->length++] = color;
     }
 
-    //resizeArray(uniqueColors->arr, uniqueColors->length);
+    free(temp);
 
     return uniqueColors;
 }
@@ -338,11 +425,85 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
     sccCounter += sccUcCounter;
     g->numOfVertices -= sccNumOfVertices;
 
-    // free(scc->arr);
-    // free(scc);
-    // free(queue->arr);
-    // free(queue);
 }
+
+int sumOfArray(int* array, int size){
+    int sum = 0;
+    for(int i=0;i<size;i++){
+        sum += array[i];
+    }
+
+    return sum;
+}
+
+// void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
+//     int sccUcCounter[endingColor - startingColor];
+//     int sccNumOfVertices[endingColor - startingColor];
+
+//     int n = g->verticesLength;
+
+//     Queue* queueArr[endingColor - startingColor];
+//     Array* sccArr[endingColor - startingColor];
+
+//     //TODO: make it cilk_for
+//     cilk_for(int i=startingColor;i<endingColor;i++){
+//         // printf("Vertex Color: ");
+//         // printArray(vertexColor, g->verticesLength);
+
+//         sccUcCounter[i] = 0;
+//         sccNumOfVertices[i] = 0;
+
+//         int color = uc->arr[i];
+
+//         Queue* queue = queueArr[i];
+//         queue = (Queue*) malloc(sizeof(Queue));
+//         queueInit(queue, n);
+//         Array* scc = sccArr[i];
+//         scc = (Array*) malloc(sizeof(Array));
+//         scc->arr = (int*) malloc(n * sizeof(int));
+//         scc->length = 0;
+
+//         // printf("Color:%d\n", color);
+//         //Find all vertexes with color and put them in vc
+//         bfs(g, color, vertexColor, queue, scc);
+
+//         // printf("SccLength=%d", scc->length);
+//         //Count SCCs found and delete from graph all vertices contained in a SCC
+//         if(scc->length > 0){
+//             sccUcCounter[i] = 1;
+//             sccNumOfVertices[i] = scc->length;
+
+//             //Delete each vertex with if found in scc
+//             for(int j=0;j<scc->length;j++){
+//                 int vid = scc->arr[j];
+//                 deleteVertexFromGraph(g, vid);
+//                 // g->numOfVertices--;
+//             }
+
+//         }
+//         else{
+//             printf("Error: Did not find any SCCs for color=%d!\n", color);
+//             exit(1);
+//         }
+
+//         free(queue->arr);
+//         free(queue);
+//         free(scc->arr);
+//         free(scc);
+//     }
+
+//     int sumSccUcCounter = 0;
+//     int sumSccNumOfVertices = 0;
+
+//     cilk_scope{
+//         sumSccUcCounter = cilk_spawn sumOfArray(sccUcCounter, endingColor - startingColor);
+//         sumSccNumOfVertices = sumOfArray(sccNumOfVertices, endingColor - startingColor);
+//     }
+    
+//     sccCounter += sumSccUcCounter;
+//     g->numOfVertices -= sumSccNumOfVertices;
+
+// }
 
 void printArray(int* array, int n){
     for(int i=0;i<n;i++){
@@ -352,6 +513,8 @@ void printArray(int* array, int n){
 }
 
 int cilkColorScc(Graph* g, bool trimming){
+    struct timeval startwtime, endwtime;
+    double duration;
     sccCounter = 0;
 
     //Initialize mutexes
@@ -362,8 +525,11 @@ int cilkColorScc(Graph* g, bool trimming){
     //Can be done in parallel
     if(trimming){
         printf("Trimming...\n");
+        gettimeofday (&startwtime, NULL);
         trimGraph(g, 0, g->verticesLength);
-        printf("Trimming ended\n");
+        gettimeofday (&endwtime, NULL);
+        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+        printf("Trimming ended in %.4f seconds\n", duration);
     }
     
     //Init VertexColor array
@@ -383,12 +549,15 @@ int cilkColorScc(Graph* g, bool trimming){
 
         //Init each vertex color withe the vertex id
         //Can be done in Parallel
+        printf("Initializing colors...\n");
         initColor(g, vertexColor, 0, n);
+        printf("Colors initialized.\n");
         // printf("Vertex Color: ");
 
         //Spread vertex color fw until there are no changes in vertexColor
         changedColor = true;
         printf("Spreading color...\n");
+        gettimeofday (&startwtime, NULL);
         while(changedColor){     
             changedColor = false;
             
@@ -396,22 +565,32 @@ int cilkColorScc(Graph* g, bool trimming){
             spreadColor(g, vertexColor, 0, n);
         }
         
-        printf("Spreading color ended\n");
+        gettimeofday (&endwtime, NULL);
+        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+        printf("Spreading color ended in %.4f seconds\n", duration);
 
         // printf("Vertex Color: ");
 
         //Find all unique colors left in the vertexColor array
+        printf("Finding unique colors...\n");
+        gettimeofday (&startwtime, NULL);
         Array* uc = findUniqueColors(vertexColor, n);
 
-        printf("Number of Unique colors=%d\n", uc->length);
+        gettimeofday (&endwtime, NULL);
+        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+        printf("Number of Unique colors=%d, found in %.4f seconds\n", uc->length, duration);
 
         printf("Finding scc number...\n");
         //For each unique color, do BFS for the for the subgraph with that color
         //Can be done in parallel
+        gettimeofday (&startwtime, NULL);
         accessUniqueColors(g, uc, vertexColor, 0, uc->length);
 
+        gettimeofday (&endwtime, NULL);
+        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+
         printf("NumOfVertices=%d\n", g->numOfVertices);
-        printf("SCCs found=%d\n", sccCounter);
+        printf("SCCs found=%d in %.4f seconds\n", sccCounter, duration);
 
         free(uc->arr);
         free(uc);
