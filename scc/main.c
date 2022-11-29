@@ -18,32 +18,37 @@ int main(int argc, char** argv){
     bool parallel = false;
     bool trimming = false;
     int givenNumOfThreads = 10;
-    if(argc == 4){
+    if(argc == 4 || argc == 5){
         filename = argv[1];
         
         if(!strcmp("trimming", argv[2]))
             trimming = true;
         else if(!strcmp("no-trimming", argv[2]))
             trimming = false;
-        else
+        else{
             printf("Error in arguments!\n");
+            exit(1);
+        }
 
-
-        if(!strcmp("parallel", argv[3]))
+        if(!strcmp("parallel", argv[3])){
             parallel = true;
+            if(argc == 5)
+                givenNumOfThreads = atoi(argv[4]);
+        }
         else if(!strcmp("sequential", argv[3]))
             parallel = false;
-        else
+        else{
             printf("Error in arguments!\n");
-
-    }
-    else if(argc == 2){
-        filename = argv[1];
+            exit(1);
+        }
     }
     else{
         printf("Error in arguments!\n");
         exit(1);
     }
+
+    if(parallel)
+        printf("Number of threads = %d\n", givenNumOfThreads);
 
     struct timeval startwtime, endwtime;
     double duration;

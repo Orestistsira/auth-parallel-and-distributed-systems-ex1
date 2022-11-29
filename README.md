@@ -4,9 +4,7 @@
 
 make
 
-./colorScc graph-name [trimming/no-trimming] [sequential/parallel]
-
-(default = no-trimming, default = sequential, default = 10 threads)
+./colorScc [graph-name] [trimming/no-trimming] [sequential/parallel] [number-of-threads]
 
 ---
 
@@ -14,7 +12,7 @@ make
 
 make
 
-./cilkScc graph-name
+[CILK_NWORKERS=N] ./cilkScc [graph-name] [trimming/no-trimming]
 
 ---
 
@@ -22,4 +20,4 @@ make
 
 make
 
-./opempScc graph-name
+./opempScc [graph-name] [trimming/no-trimming]

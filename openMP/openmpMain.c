@@ -4,8 +4,18 @@
 
 int main(int argc, char** argv){
     char* filename = NULL;
-    if(argc == 2){
+    bool trimming = false;
+    if(argc == 3){
         filename = argv[1];
+        
+        if(!strcmp("trimming", argv[2]))
+            trimming = true;
+        else if(!strcmp("no-trimming", argv[2]))
+            trimming = false;
+        else{
+            printf("Error in arguments!\n");
+            exit(1);
+        }
     }
     else{
         printf("Error in arguments!\n");
@@ -21,15 +31,12 @@ int main(int argc, char** argv){
     printf("Graph ready.\n");
     //printGraph(g);
 
-    int numOfThreads = omp_get_num_threads();
-    printf("Number of threads = %d\n", numOfThreads);
-
     struct timeval startwtime, endwtime;
 
     gettimeofday (&startwtime, NULL);
 
     int numOfScc = 0;
-    numOfScc = openmpColorScc(g, true);
+    numOfScc = openmpColorScc(g, trimming);
 
     gettimeofday (&endwtime, NULL);
 
