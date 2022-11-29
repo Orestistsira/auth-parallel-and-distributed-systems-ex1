@@ -18,7 +18,7 @@ CooArray* readMtxFile(char* filename){
     double* val;
 
     char filepath[50];
-    strcpy(filepath, "graphs/");
+    strcpy(filepath, "../graphs/");
     strcat(filepath, filename);
     strcat(filepath, ".mtx");
 

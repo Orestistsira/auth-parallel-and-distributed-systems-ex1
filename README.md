@@ -1,17 +1,25 @@
 # auth-parallel-and-distributed-systems
 
-make scc
+1. Directory scc
+
+make
 
 ./colorScc graph-name [trimming/no-trimming] [sequential/parallel]
 
 (default = no-trimming, default = sequential, default = 10 threads)
 
+---
 
-make cilk
+2. Directory openCilk
+
+make
 
 ./cilkScc graph-name
 
+---
 
-make openmp
+3. Directory openMP
+
+make
 
 ./opempScc graph-name

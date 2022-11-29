@@ -1,28 +1,11 @@
-#include "seqScc.h"
+#include "cilkScc.h"
 
 //global vars
 int sccCounter;
 bool changedColor;
 
-void printArray(int* array, int n){
-    for(int i=0;i<n;i++){
-        printf("%d ", array[i]);
-    }
-    printf("\n");
-}
-
-void printGraph(Graph* g){
-    printf("End:---------------------------------------------------------------------------------------\n");
-    printArray(g->end, g->endLength);
-    printf("Start:-------------------------------------------------------------------------------------\n");
-    printArray(g->start, g->startLength);
-    printf("Start Pointer------------------------------------------------------------------------------\n");
-    printArray(g->startPointer, g->startPointerLength);
-    printf("Vertices-----------------------------------------------------------------------------------\n");
-    printArray(g->vertices, g->verticesLength);
-    printf("NoV=%d\n", g->verticesLength);
-    printf("\n");
-}
+pthread_mutex_t mutex;
+pthread_mutex_t mutexDelVertex;
 
 //Returns a COO array from an mtx file
 CooArray* readMtxFile(char* filename){
@@ -35,7 +18,7 @@ CooArray* readMtxFile(char* filename){
     double* val;
 
     char filepath[50];
-    strcpy(filepath, "graphs/");
+    strcpy(filepath, "../graphs/");
     strcat(filepath, filename);
     strcat(filepath, ".mtx");
 
@@ -142,25 +125,36 @@ CooArray* readMtxFile(char* filename){
     cooArray->jLength = nz;
     cooArray->numOfVertices = M;
     printf("\n");
+
     free(val);
 
 	return cooArray;
 }
 
+//Identifies and removes all trivial SCCs
 void trimGraph(Graph* g, int startingVertex, int endingVertex){
-    //For every vertex ID in vertices array of graph 
-    for(int i=startingVertex;i<endingVertex;i++){
-
+    //For every vertex ID in vertices array of graph
+    int sccTrimCounter = 0;
+    
+    cilk_for(int i=startingVertex;i<endingVertex;i++){
+        
         //If the in-degree or out-degree is zero trim the vertex
         if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
             //printf("Trimming vertex: %d\n", vid);
             deleteIndexfromArray(g->vertices, i);
-            sccCounter++;
-            g->numOfVertices--;
+            pthread_mutex_lock(&mutex);
+            sccTrimCounter++;
+            pthread_mutex_unlock(&mutex);
         }
     }
+
+    sccCounter += sccTrimCounter;
+    g->numOfVertices -= sccTrimCounter;
+
+    //resizeArray(g->vertices, g->verticesLength);
 }
 
+//Initializes graph from a given COO array
 Graph* initGraphFromCoo(CooArray* ca){
     Graph* g = (Graph*) malloc(sizeof(Graph));
     g->end = ca->i;
@@ -219,17 +213,19 @@ Graph* initGraphFromCoo(CooArray* ca){
 
 //Initializes each vertex with a color which equals to its ID
 void initColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex){
-    for(int i=startingVertex;i<endingVertex;i++){
+    cilk_for(int i=startingVertex;i<endingVertex;i++){
         vertexColor[i] = -1;
 
         int vid = g->vertices[i];
         if(vid != -1)
             vertexColor[i] = vid;
-    }    
+    } 
 }
 
+//Spreads color forward following the path of the edges
 void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex){
-    for(int i=startingVertex;i<endingVertex;i++){
+    //good for parallelism
+    cilk_for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
         if(vid == -1){
             continue;
@@ -240,10 +236,7 @@ void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVerte
             continue;
         //int vid = g->vertices[i];
 
-        //TODO: store start index of each vertex from init 
-        //int startIndex = getIndexOfValue(g->start, g->startLength, vid);
         int startIndex = g->vertexPosInStart[vid];
-        //if(startIndex == -1) continue;
 
         //Follow the edges and spread color to the end vertices
         int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
@@ -374,49 +367,28 @@ Array* findUniqueColors(int* vertexColor, int size){
     return uniqueColors;
 }
 
-// Array* findUniqueColors(int* vertexColor, int size){
-//     Array* uniqueColors = (Array*) malloc(sizeof(Array));
-//     uniqueColors->arr = (int*) malloc(size * sizeof(int));
-//     uniqueColors->length = 0;
-
-//     for(int i=0;i<size;i++){
-//         int color = vertexColor[i];
-//         if(color == -1){
-//             continue;
-//         }
-
-//         if(notInArray(uniqueColors->arr, uniqueColors->length, color)){
-//             uniqueColors->arr[uniqueColors->length++] = color;
-//         }
-//     }
-
-//     return uniqueColors;
-// }
-
 void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
+    int sccUcCounter = 0;
+    int sccNumOfVertices = 0;
+
     int n = g->verticesLength;
-    Queue* queue = (Queue*) malloc(sizeof(Queue));
-    if(queue == NULL)
-        printf("ERROR in queue malloc");
 
-    queueInit(queue, n);
+    Queue* queueArr[endingColor - startingColor];
+    Array* sccArr[endingColor - startingColor];
 
-    Array* scc = (Array*) malloc(sizeof(Array));
-    if(scc == NULL)
-        printf("ERROR in scc malloc");
-    scc->arr = (int*) malloc(n * sizeof(int));
-    if(scc->arr == NULL)
-        printf("ERROR in scc array malloc");
-    scc->length = 0;
-
-    for(int i=0;i<uc->length;i++){
+    //TODO: make it cilk_for
+    cilk_for(int i=startingColor;i<endingColor;i++){
         // printf("Vertex Color: ");
         // printArray(vertexColor, g->verticesLength);
 
         int color = uc->arr[i];
 
-        queue->qStart = 0;
-        queue->qEnd = 0;
+        Queue* queue = queueArr[i];
+        queue = (Queue*) malloc(sizeof(Queue));
+        queueInit(queue, n);
+        Array* scc = sccArr[i];
+        scc = (Array*) malloc(sizeof(Array));
+        scc->arr = (int*) malloc(n * sizeof(int));
         scc->length = 0;
 
         // printf("Color:%d\n", color);
@@ -426,32 +398,128 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
         // printf("SccLength=%d", scc->length);
         //Count SCCs found and delete from graph all vertices contained in a SCC
         if(scc->length > 0){
-            sccCounter++;
+            pthread_mutex_lock(&mutex);
+            sccUcCounter++;
+            sccNumOfVertices += scc->length;
+            pthread_mutex_unlock(&mutex);
 
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
                 deleteVertexFromGraph(g, vid);
-                g->numOfVertices--;
+                // g->numOfVertices--;
             }
+
         }
         else{
             printf("Error: Did not find any SCCs for color=%d!\n", color);
             exit(1);
         }
 
+        free(queue->arr);
+        free(queue);
+        free(scc->arr);
+        free(scc);
     }
-    free(scc->arr);
-    free(scc);
-    free(queue->arr);
-    free(queue);
+
+    sccCounter += sccUcCounter;
+    g->numOfVertices -= sccNumOfVertices;
+
 }
 
-int sequentialColorScc(Graph* g, bool trimming){
-    sccCounter = 0;
+int sumOfArray(int* array, int size){
+    int sum = 0;
+    for(int i=0;i<size;i++){
+        sum += array[i];
+    }
 
+    return sum;
+}
+
+// void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
+//     int sccUcCounter[endingColor - startingColor];
+//     int sccNumOfVertices[endingColor - startingColor];
+
+//     int n = g->verticesLength;
+
+//     Queue* queueArr[endingColor - startingColor];
+//     Array* sccArr[endingColor - startingColor];
+
+//     //TODO: make it cilk_for
+//     cilk_for(int i=startingColor;i<endingColor;i++){
+//         // printf("Vertex Color: ");
+//         // printArray(vertexColor, g->verticesLength);
+
+//         sccUcCounter[i] = 0;
+//         sccNumOfVertices[i] = 0;
+
+//         int color = uc->arr[i];
+
+//         Queue* queue = queueArr[i];
+//         queue = (Queue*) malloc(sizeof(Queue));
+//         queueInit(queue, n);
+//         Array* scc = sccArr[i];
+//         scc = (Array*) malloc(sizeof(Array));
+//         scc->arr = (int*) malloc(n * sizeof(int));
+//         scc->length = 0;
+
+//         // printf("Color:%d\n", color);
+//         //Find all vertexes with color and put them in vc
+//         bfs(g, color, vertexColor, queue, scc);
+
+//         // printf("SccLength=%d", scc->length);
+//         //Count SCCs found and delete from graph all vertices contained in a SCC
+//         if(scc->length > 0){
+//             sccUcCounter[i] = 1;
+//             sccNumOfVertices[i] = scc->length;
+
+//             //Delete each vertex with if found in scc
+//             for(int j=0;j<scc->length;j++){
+//                 int vid = scc->arr[j];
+//                 deleteVertexFromGraph(g, vid);
+//                 // g->numOfVertices--;
+//             }
+
+//         }
+//         else{
+//             printf("Error: Did not find any SCCs for color=%d!\n", color);
+//             exit(1);
+//         }
+
+//         free(queue->arr);
+//         free(queue);
+//         free(scc->arr);
+//         free(scc);
+//     }
+
+//     int sumSccUcCounter = 0;
+//     int sumSccNumOfVertices = 0;
+
+//     cilk_scope{
+//         sumSccUcCounter = cilk_spawn sumOfArray(sccUcCounter, endingColor - startingColor);
+//         sumSccNumOfVertices = sumOfArray(sccNumOfVertices, endingColor - startingColor);
+//     }
+    
+//     sccCounter += sumSccUcCounter;
+//     g->numOfVertices -= sumSccNumOfVertices;
+
+// }
+
+void printArray(int* array, int n){
+    for(int i=0;i<n;i++){
+        printf("%d ", array[i]);
+    }
+    printf("\n");
+}
+
+int cilkColorScc(Graph* g, bool trimming){
     struct timeval startwtime, endwtime;
     double duration;
+    sccCounter = 0;
+
+    //Initialize mutexes
+    pthread_mutex_init(&mutex, NULL);
+    pthread_mutex_init(&mutexDelVertex, NULL);
     
     //Trim trvial SCCs to simplify the graph
     //Can be done in parallel
@@ -481,9 +549,10 @@ int sequentialColorScc(Graph* g, bool trimming){
 
         //Init each vertex color withe the vertex id
         //Can be done in Parallel
+        printf("Initializing colors...\n");
         initColor(g, vertexColor, 0, n);
+        printf("Colors initialized.\n");
         // printf("Vertex Color: ");
-        // printArray(vertexColor, g->verticesLength);
 
         //Spread vertex color fw until there are no changes in vertexColor
         changedColor = true;
@@ -495,27 +564,28 @@ int sequentialColorScc(Graph* g, bool trimming){
             //Can be done in Parallel
             spreadColor(g, vertexColor, 0, n);
         }
+        
         gettimeofday (&endwtime, NULL);
         duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
-
-        //printArray(vertexColor, g->verticesLength);
-        
         printf("Spreading color ended in %.4f seconds\n", duration);
 
+        // printf("Vertex Color: ");
 
+        //Find all unique colors left in the vertexColor array
         printf("Finding unique colors...\n");
         gettimeofday (&startwtime, NULL);
-        //Find all unique colors left in the vertexColor array
         Array* uc = findUniqueColors(vertexColor, n);
+
         gettimeofday (&endwtime, NULL);
         duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
         printf("Number of Unique colors=%d, found in %.4f seconds\n", uc->length, duration);
 
         printf("Finding scc number...\n");
-        gettimeofday (&startwtime, NULL);
         //For each unique color, do BFS for the for the subgraph with that color
         //Can be done in parallel
+        gettimeofday (&startwtime, NULL);
         accessUniqueColors(g, uc, vertexColor, 0, uc->length);
+
         gettimeofday (&endwtime, NULL);
         duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
 
@@ -525,7 +595,10 @@ int sequentialColorScc(Graph* g, bool trimming){
         free(uc->arr);
         free(uc);
     }
+
     free(vertexColor);
 
+    pthread_mutex_destroy(&mutex);
+    pthread_mutex_destroy(&mutexDelVertex);
     return sccCounter;
 }
