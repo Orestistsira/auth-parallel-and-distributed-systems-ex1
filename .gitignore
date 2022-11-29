@@ -1,1 +1,4 @@
 graphs/
+colorScc
+cilkScc
+openmpScc
