@@ -16,6 +16,8 @@ bool notInArray(int* arr, int size, int value);
 
 CooArray* readMtxFile(char* file);
 
+void calculateVertexDegrees(Graph* g, int startingVertex, int endingVertex);
+
 void trimGraph(Graph* g, int startingVertex, int endingVertex);
 
 Graph* initGraphFromCoo(CooArray* ca);

@@ -28,6 +28,17 @@ pthread_mutex_t mutexAddScc;
 pthread_mutex_t mutexAddToSubg;
 pthread_mutex_t mutexDeleteVertex;
 
+void* parCalculateVertexDegrees(void* args){
+    Arguments* arguments = (Arguments*) args;
+    Graph* g = arguments->g;
+    int startingVertex = arguments->startIndex;
+    int endingVertex = arguments->endIndex;
+
+    calculateVertexDegrees(g, startingVertex, endingVertex);
+
+    pthread_exit(NULL);
+}
+
 void* parTrimGraph(void* args){
     //Graph* g, int startingVertex, int endingVertex
     Arguments* arguments = (Arguments*) args;
@@ -42,6 +53,7 @@ void* parTrimGraph(void* args){
 
     //For every vertex ID in vertices array of graph 
     for(int i=startingVertex;i<endingVertex;i++){
+        if(g->vertices[i] == -1) continue;
 
         //If the in-degree or out-degree is zero trim the vertex
         if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
@@ -50,6 +62,9 @@ void* parTrimGraph(void* args){
             
             sccTrimCounter++;
         }
+
+        g->inDegree[i] = 0;
+        g->outDegree[i] = 0;
     }
 
     //MUTEX
@@ -76,6 +91,41 @@ void createThreadsForTrim(Graph* g){
 
     Arguments arguments[numOfThreads];
 
+    //Calculate degrees
+    local = g->endLength / numOfThreads + 1;
+	for(i=0;i<numOfThreads;i++){
+        // printf("In parallelScc: Creating thread #%ld\n", i);
+
+        Arguments* args = &arguments[i];
+        //args[i] = (Arguments*) malloc(sizeof(Arguments));
+        args->g = g;
+        args->id = i;
+
+        args->startIndex = i * local;
+        args->endIndex = ((i + 1) * local) > g->endLength ? g->endLength : (i + 1) * local;
+
+        rc = pthread_create(&thread[i], &attr, parCalculateVertexDegrees, (void*)args);
+
+		if(rc){
+			// printf("Error in thread #%ld! Return code from pthread_create() is %d\n", i, rc);
+			exit(-1);
+		}
+    }
+    /* Free attribute and wait for the other threads */
+	//pthread_attr_destroy(&attr);
+
+	for(i=0;i<numOfThreads;i++){
+		rc = pthread_join(thread[i], NULL);
+
+		if(rc){
+			printf("ERROR; return code from pthread_join() is %d\n", rc);
+			exit(-1);
+		}
+		// printf("Main: completed join with thread %ld\n", i);
+	}
+
+
+    //Trim graph
     local = g->verticesLength / numOfThreads + 1;
 	for(i=0;i<numOfThreads;i++){
         // printf("In parallelScc: Creating thread #%ld\n", i);
@@ -396,15 +446,6 @@ int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
     
-    if(trimming){
-        printf("Trimming...\n");
-        gettimeofday (&startwtime, NULL);
-        createThreadsForTrim(g);
-        gettimeofday (&endwtime, NULL);
-        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
-        printf("Trimming ended in %.4f seconds\n", duration);
-    }
-
     //Init VertexColor array
     //Each Index corresponds to de vertices array and the value is the color of the vertex
     int n = g->verticesLength;
@@ -416,6 +457,15 @@ int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
         if(g->numOfVertices == 1){
             parSccCounter++;
             break;
+        }
+
+        if(trimming){
+            printf("Trimming...\n");
+            gettimeofday (&startwtime, NULL);
+            createThreadsForTrim(g);
+            gettimeofday (&endwtime, NULL);
+            duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+            printf("Trimming ended in %.4f seconds\n", duration);
         }
 
         printf("Start\n");

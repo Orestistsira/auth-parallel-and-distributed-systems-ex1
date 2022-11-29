@@ -6,6 +6,7 @@ typedef struct Graph{
 
     int* startPointer; //points to where start values begin
     int* end;
+    int* startAll;
     int* start;
     int* vertexPosInStart;
 

@@ -147,9 +147,25 @@ CooArray* readMtxFile(char* filename){
 	return cooArray;
 }
 
+void calculateVertexDegrees(Graph* g, int startingVertex, int endingVertex){
+    //Find all vertices from the J (start) array
+    for(int i=startingVertex;i<endingVertex;i++){
+        int startId = g->startAll[i];
+        int endId = g->end[i];
+
+        if(g->vertices[startId] == -1 || g->vertices[endId] == -1) continue;
+
+        g->outDegree[startId]++;
+        g->inDegree[endId]++;
+    }
+}
+
 void trimGraph(Graph* g, int startingVertex, int endingVertex){
+    calculateVertexDegrees(g, 0, g->endLength);
+
     //For every vertex ID in vertices array of graph 
     for(int i=startingVertex;i<endingVertex;i++){
+        if(g->vertices[i] == -1) continue;
 
         //If the in-degree or out-degree is zero trim the vertex
         if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
@@ -158,6 +174,9 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
             sccCounter++;
             g->numOfVertices--;
         }
+
+        g->inDegree[i] = 0;
+        g->outDegree[i] = 0;
     }
 }
 
@@ -165,6 +184,8 @@ Graph* initGraphFromCoo(CooArray* ca){
     Graph* g = (Graph*) malloc(sizeof(Graph));
     g->end = ca->i;
     g->endLength = ca->iLength;
+
+    g->startAll = ca->j;
 
     //Malloc to size jLength because we dont know the final size
     g->start = (int*) malloc(ca->jLength * sizeof(int));
@@ -194,17 +215,14 @@ Graph* initGraphFromCoo(CooArray* ca){
             g->startPointer[g->startPointerLength] = index;
             g->startPointerLength++;
 
-            g->outDegree[vid]++;
+            //g->outDegree[vid]++;
         }
-
-        //int indexInVertices = getIndexOfValue(g->vertices, g->verticesLength, ca->j[index]);
-        //g->outDegree[indexInVertices]++;
     }
 
     //Get all remaining vertices from I (end) array
-    for(int i=0;i<g->endLength;i++){
-        g->inDegree[g->end[i]]++;
-    }
+    // for(int i=0;i<g->endLength;i++){
+    //     g->inDegree[g->end[i]]++;
+    // }
 
     g->numOfVertices = g->verticesLength;
 
@@ -212,7 +230,7 @@ Graph* initGraphFromCoo(CooArray* ca){
 
     //printArray(g->vertexPosInStart, g->numOfVertices);
 
-    free(ca->j);
+    //free(ca->j);
     free(ca);
     return g;
 }
@@ -265,8 +283,7 @@ void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVerte
     }
 }
 
-void merge(int arr[], int l, int m, int r)
-{
+void merge(int arr[], int l, int m, int r){
 	int i, j, k;
 	int n1 = m - l + 1;
 	int n2 = r - m;
@@ -320,8 +337,7 @@ void merge(int arr[], int l, int m, int r)
 
 /* l is for left index and r is right index of the
 sub-array of arr to be sorted */
-void mergeSort(int arr[], int l, int r)
-{
+void mergeSort(int arr[], int l, int r){
 	if (l < r) {
 		// Same as (l+r)/2, but avoids overflow for
 		// large l and h
@@ -335,13 +351,12 @@ void mergeSort(int arr[], int l, int r)
 	}
 }
 
-int* copyArray(int const* src, int len)
-{
-   int* p = malloc(len * sizeof(int));
-   if(p == NULL)
-    printf("Error: malloc failed in copy array\n");
-   memcpy(p, src, len * sizeof(int));
-   return p;
+int* copyArray(int const* src, int len){
+    int* p = malloc(len * sizeof(int));
+    if(p == NULL)
+        printf("Error: malloc failed in copy array\n");
+    memcpy(p, src, len * sizeof(int));
+    return p;
 }
 
 //Returns all unique colors contained in vertexColor array
@@ -453,17 +468,6 @@ int sequentialColorScc(Graph* g, bool trimming){
     struct timeval startwtime, endwtime;
     double duration;
     
-    //Trim trvial SCCs to simplify the graph
-    //Can be done in parallel
-    if(trimming){
-        printf("Trimming...\n");
-        gettimeofday (&startwtime, NULL);
-        trimGraph(g, 0, g->verticesLength);
-        gettimeofday (&endwtime, NULL);
-        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
-        printf("Trimming ended in %.4f seconds\n", duration);
-    }
-    
     //Init VertexColor array
     //Each Index corresponds to de vertices array and the value is the color of the vertex
     int n = g->verticesLength;
@@ -473,6 +477,18 @@ int sequentialColorScc(Graph* g, bool trimming){
         if(g->numOfVertices == 1){
             sccCounter++;
             break;
+        }
+        if(g->numOfVertices < 1000) trimming = false;
+
+        //Trim trvial SCCs to simplify the graph
+        //Can be done in parallel
+        if(trimming){
+            printf("Trimming...\n");
+            gettimeofday (&startwtime, NULL);
+            trimGraph(g, 0, g->verticesLength);
+            gettimeofday (&endwtime, NULL);
+            duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
+            printf("Trimming ended in %.4f seconds\n", duration);
         }
 
         printf("Start\n");
