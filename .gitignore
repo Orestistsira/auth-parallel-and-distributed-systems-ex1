@@ -2,3 +2,4 @@ graphs/
 colorScc
 cilkScc
 openmpScc
+.vscode/
