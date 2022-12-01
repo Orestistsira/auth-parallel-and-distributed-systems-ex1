@@ -138,6 +138,8 @@ void calculateVertexDegrees(Graph* g){
         int endId = g->end[i];
 
         if(g->vertices[startId] == -1 || g->vertices[endId] == -1) continue;
+        //self loops
+        if(g->vertices[startId] == g->vertices[endId]) continue;
 
         g->outDegree[startId]++;
         g->inDegree[endId]++;
@@ -247,13 +249,11 @@ void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVerte
     //good for parallelism
     cilk_for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
-        if(vid == -1){
-            continue;
-        } 
-
         int color = vertexColor[vid];
-        if(color == 0)
+        if(vid == -1 || color == 0){
             continue;
+        }
+        
         //int vid = g->vertices[i];
 
         int startIndex = g->vertexPosInStart[vid];

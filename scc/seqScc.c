@@ -154,6 +154,8 @@ void calculateVertexDegrees(Graph* g, int startingVertex, int endingVertex){
         int endId = g->end[i];
 
         if(g->vertices[startId] == -1 || g->vertices[endId] == -1) continue;
+        //self loops
+        if(g->vertices[startId] == g->vertices[endId]) continue;
 
         g->outDegree[startId]++;
         g->inDegree[endId]++;
