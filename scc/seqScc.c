@@ -410,8 +410,7 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
 int sequentialColorScc(Graph* g, bool trimming){
     sccCounter = 0;
 
-    struct timeval startwtime, endwtime;
-    double duration;
+    printf("NumOfVertices=%d\n", g->numOfVertices);
     
     //Init VertexColor array
     //Each Index corresponds to thee vertices array and the value is the color of the vertex
@@ -429,48 +428,25 @@ int sequentialColorScc(Graph* g, bool trimming){
 
         //Trim trvial SCCs to simplify the graph
         if(trimming){
-            printf("Trimming...\n");
-            gettimeofday (&startwtime, NULL);
             trimGraph(g, 0, g->verticesLength);
-            gettimeofday (&endwtime, NULL);
-            duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
-            printf("Trimming ended in %.4f seconds\n", duration);
         }
-        printf("NumOfVertices=%d\n", g->numOfVertices);
 
         //Init each vertex color cell with the id of each vertex
         initColor(g, vertexColor, 0, n);
 
         //Spread vertex color fw until there are no changes in vertexColor
         changedColor = true;
-        printf("Spreading color...\n");
-        gettimeofday (&startwtime, NULL);
         while(changedColor){     
             changedColor = false;
 
             spreadColor(g, vertexColor, 0, n);
         }
-        gettimeofday (&endwtime, NULL);
-        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);  
-        printf("Spreading color ended in %.4f seconds\n", duration);
 
         //Find all unique colors left in the vertexColor array
-        printf("Finding unique colors...\n");
-        gettimeofday (&startwtime, NULL);
         Array* uc = findUniqueColors(vertexColor, n);
-        gettimeofday (&endwtime, NULL);
-        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
-        printf("Number of Unique colors=%d, found in %.4f seconds\n", uc->length, duration);
 
         //For each unique color, do BFS for the for the subgraph with that color
-        printf("Finding scc number...\n");
-        gettimeofday (&startwtime, NULL);
         accessUniqueColors(g, uc, vertexColor, 0, uc->length);
-        gettimeofday (&endwtime, NULL);
-        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
-
-        printf("NumOfVertices=%d\n", g->numOfVertices);
-        printf("SCCs found=%d in %.4f seconds\n", sccCounter, duration);
 
         free(uc->arr);
         free(uc);

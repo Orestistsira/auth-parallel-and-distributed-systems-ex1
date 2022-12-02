@@ -6,7 +6,7 @@ int main(int argc, char** argv){
     char* filename = NULL;
     bool parallel = false;
     bool trimming = false;
-    int givenNumOfThreads = 10;
+    int givenNumOfThreads = 4;
 
     if(argc == 4 || argc == 5){
         filename = argv[1];
