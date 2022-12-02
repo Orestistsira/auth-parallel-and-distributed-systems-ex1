@@ -1,23 +1,13 @@
 #include <string.h>
 
-//#include "seqScc.h"
 #include "parallelScc.h"
 
 int main(int argc, char** argv){
-    // CooArray* ca = (CooArray*) malloc(sizeof(CooArray));
-
-    // ca->i = (int[9]){1, 2, 3, 4, 0, 5, 6, 4, 7};
-    // ca->iLength = 9;
-    // ca->j = (int[9]){0, 1, 2, 2, 3, 4, 5, 6, 6};
-    // ca->jLength = 9;
-    // ca->numOfVertices = 8;
-
-    // ca = NULL;
-
     char* filename = NULL;
     bool parallel = false;
     bool trimming = false;
     int givenNumOfThreads = 10;
+
     if(argc == 4 || argc == 5){
         filename = argv[1];
         
@@ -53,17 +43,17 @@ int main(int argc, char** argv){
     struct timeval startwtime, endwtime;
     double duration;
 
-    //ca = readMtxFile("graphs/celegansneural.mtx");
+    //Read the mtx file
+    printf("Loading graph...\n");
     CooArray* ca = readMtxFile(filename);
-    //ca = readMtxFile("graphs/language.mtx");
-    //ca = readMtxFile("graphs/eu-2005.mtx");
+
+    //Initialize the graph from the COO array
     printf("Initializing Graph...\n");
     gettimeofday (&startwtime, NULL);
     Graph* g = initGraphFromCoo(ca);
     gettimeofday (&endwtime, NULL);
     duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
     printf("Graph ready in %.4f seconds.\n", duration);
-    //printGraph(g);
 
     
     gettimeofday (&startwtime, NULL);

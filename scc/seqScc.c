@@ -108,9 +108,6 @@ CooArray* readMtxFile(char* filename){
 
         mm_write_banner(stdout, matcode);
         mm_write_mtx_crd_size(stdout, M, N, nz);
-        // for(i=0; i<nz; i++){
-        //     fprintf(stdout, "%d %d %20.19g\n", I[i]+1, J[i]+1, val[i]);
-        // }
     }
     else if(numOfCols == 2){
         //For unweighted graphs
@@ -126,9 +123,6 @@ CooArray* readMtxFile(char* filename){
 
         mm_write_banner(stdout, matcode);
         mm_write_mtx_crd_size(stdout, M, N, nz);
-        // for(i=0; i<nz; i++){
-        //     fprintf(stdout, "%d %d\n", I[i]+1, J[i]+1);
-        // }
     }
     else{
         printf("Error: Number of columns not 2 or 3!\n");
@@ -148,13 +142,13 @@ CooArray* readMtxFile(char* filename){
 }
 
 void calculateVertexDegrees(Graph* g, int startingVertex, int endingVertex){
-    //Find all vertices from the J (start) array
     for(int i=startingVertex;i<endingVertex;i++){
         int startId = g->startAll[i];
         int endId = g->end[i];
 
+        //If vertices not deleted
         if(g->vertices[startId] == -1 || g->vertices[endId] == -1) continue;
-        //self loops
+        //Do not count self loops
         if(g->vertices[startId] == g->vertices[endId]) continue;
 
         g->outDegree[startId]++;
@@ -171,7 +165,6 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
 
         //If the in-degree or out-degree is zero trim the vertex
         if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
-            //printf("Trimming vertex: %d\n", vid);
             deleteIndexfromArray(g->vertices, i);
             sccCounter++;
             g->numOfVertices--;
@@ -216,23 +209,11 @@ Graph* initGraphFromCoo(CooArray* ca){
             g->startLength++;
             g->startPointer[g->startPointerLength] = index;
             g->startPointerLength++;
-
-            //g->outDegree[vid]++;
         }
     }
 
-    //Get all remaining vertices from I (end) array
-    // for(int i=0;i<g->endLength;i++){
-    //     g->inDegree[g->end[i]]++;
-    // }
-
     g->numOfVertices = g->verticesLength;
 
-    //mergeSort(g->vertices, 0, g->numOfVertices);
-
-    //printArray(g->vertexPosInStart, g->numOfVertices);
-
-    //free(ca->j);
     free(ca);
     return g;
 }
@@ -251,29 +232,20 @@ void initColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex)
 void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex){
     for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
-        if(vid == -1){
-            continue;
-        } 
+        if(vid == -1) continue;
 
         int color = vertexColor[vid];
-        if(color == 0)
-            continue;
-        //int vid = g->vertices[i];
+        if(color == 0) continue;
 
-        //TODO: store start index of each vertex from init 
-        //int startIndex = getIndexOfValue(g->start, g->startLength, vid);
         int startIndex = g->vertexPosInStart[vid];
-        //if(startIndex == -1) continue;
 
         //Follow the edges and spread color to the end vertices
         int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
 
         for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-            //If vertex has been removed
             int endvid = g->vertices[g->end[endIndex]];
-            if(endvid == -1){
-                continue;
-            }
+            //If end vertex has been removed continue
+            if(endvid == -1) continue;
 
             int nextColor = vertexColor[endvid];
 
@@ -337,8 +309,6 @@ void merge(int arr[], int l, int m, int r){
     free(R);
 }
 
-/* l is for left index and r is right index of the
-sub-array of arr to be sorted */
 void mergeSort(int arr[], int l, int r){
 	if (l < r) {
 		// Same as (l+r)/2, but avoids overflow for
@@ -369,16 +339,13 @@ Array* findUniqueColors(int* vertexColor, int size){
 
     int* temp = copyArray(vertexColor, size);
 
-    //printArray(temp, size);
+    //Sort vertexColor temp array
     mergeSort(temp, 0, size - 1);
 
-    //printArray(temp, size);
-
+    //Find its unique colors
     for(int i=0;i<size;i++){
         int color = temp[i];
-        if(color == -1){
-            continue;
-        }
+        if(color == -1) continue;
 
         while(i < size - 1 && temp[i] == temp[i+1])
             i++;
@@ -390,25 +357,6 @@ Array* findUniqueColors(int* vertexColor, int size){
 
     return uniqueColors;
 }
-
-// Array* findUniqueColors(int* vertexColor, int size){
-//     Array* uniqueColors = (Array*) malloc(sizeof(Array));
-//     uniqueColors->arr = (int*) malloc(size * sizeof(int));
-//     uniqueColors->length = 0;
-
-//     for(int i=0;i<size;i++){
-//         int color = vertexColor[i];
-//         if(color == -1){
-//             continue;
-//         }
-
-//         if(notInArray(uniqueColors->arr, uniqueColors->length, color)){
-//             uniqueColors->arr[uniqueColors->length++] = color;
-//         }
-//     }
-
-//     return uniqueColors;
-// }
 
 void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
     int n = g->verticesLength;
@@ -427,20 +375,15 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
     scc->length = 0;
 
     for(int i=0;i<uc->length;i++){
-        // printf("Vertex Color: ");
-        // printArray(vertexColor, g->verticesLength);
-
         int color = uc->arr[i];
 
         queue->qStart = 0;
         queue->qEnd = 0;
         scc->length = 0;
 
-        // printf("Color:%d\n", color);
-        //Find all vertexes with color and put them in vc
+        //Find all vertices included to the scc for the current unique color
         bfs(g, color, vertexColor, queue, scc);
 
-        // printf("SccLength=%d", scc->length);
         //Count SCCs found and delete from graph all vertices contained in a SCC
         if(scc->length > 0){
             sccCounter++;
@@ -471,9 +414,11 @@ int sequentialColorScc(Graph* g, bool trimming){
     double duration;
     
     //Init VertexColor array
-    //Each Index corresponds to de vertices array and the value is the color of the vertex
+    //Each Index corresponds to thee vertices array and the value is the color of the vertex
     int n = g->verticesLength;
     int* vertexColor = (int*) malloc(n * sizeof(int));
+    if(vertexColor == NULL)
+        printf("ERROR in vertexColor malloc\n");
 
     while(g->numOfVertices > 0){
         if(g->numOfVertices == 1){
@@ -483,7 +428,6 @@ int sequentialColorScc(Graph* g, bool trimming){
         if(g->numOfVertices < 1000) trimming = false;
 
         //Trim trvial SCCs to simplify the graph
-        //Can be done in parallel
         if(trimming){
             printf("Trimming...\n");
             gettimeofday (&startwtime, NULL);
@@ -492,16 +436,10 @@ int sequentialColorScc(Graph* g, bool trimming){
             duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
             printf("Trimming ended in %.4f seconds\n", duration);
         }
-
-        printf("Start\n");
-        // printGraph(g);
         printf("NumOfVertices=%d\n", g->numOfVertices);
 
-        //Init each vertex color withe the vertex id
-        //Can be done in Parallel
+        //Init each vertex color cell with the id of each vertex
         initColor(g, vertexColor, 0, n);
-        // printf("Vertex Color: ");
-        // printArray(vertexColor, g->verticesLength);
 
         //Spread vertex color fw until there are no changes in vertexColor
         changedColor = true;
@@ -509,30 +447,24 @@ int sequentialColorScc(Graph* g, bool trimming){
         gettimeofday (&startwtime, NULL);
         while(changedColor){     
             changedColor = false;
-            
-            //Can be done in Parallel
+
             spreadColor(g, vertexColor, 0, n);
         }
         gettimeofday (&endwtime, NULL);
-        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
-
-        //printArray(vertexColor, g->verticesLength);
-        
+        duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);  
         printf("Spreading color ended in %.4f seconds\n", duration);
 
-
+        //Find all unique colors left in the vertexColor array
         printf("Finding unique colors...\n");
         gettimeofday (&startwtime, NULL);
-        //Find all unique colors left in the vertexColor array
         Array* uc = findUniqueColors(vertexColor, n);
         gettimeofday (&endwtime, NULL);
         duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
         printf("Number of Unique colors=%d, found in %.4f seconds\n", uc->length, duration);
 
+        //For each unique color, do BFS for the for the subgraph with that color
         printf("Finding scc number...\n");
         gettimeofday (&startwtime, NULL);
-        //For each unique color, do BFS for the for the subgraph with that color
-        //Can be done in parallel
         accessUniqueColors(g, uc, vertexColor, 0, uc->length);
         gettimeofday (&endwtime, NULL);
         duration = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6 + endwtime.tv_sec - startwtime.tv_sec);
