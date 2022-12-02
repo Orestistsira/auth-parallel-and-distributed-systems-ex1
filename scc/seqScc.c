@@ -428,7 +428,7 @@ int sequentialColorScc(Graph* g, bool trimming){
 
         //Trim trvial SCCs to simplify the graph
         if(trimming){
-            trimGraph(g, 0, g->verticesLength);
+            trimGraph(g, 0, n);
         }
 
         //Init each vertex color cell with the id of each vertex
