@@ -21,6 +21,8 @@ typedef struct Graph{
     //number of vertices not -1
     int numOfVertices;
 
+    int* sccIdOfVertex;
+
 }Graph;
 
 void deleteIndexfromArray(int*arr, int index);
