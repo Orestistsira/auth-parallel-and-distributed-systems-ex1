@@ -58,7 +58,6 @@ void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
     
     int n = g->verticesLength;
     //For each vertex
-    // bool visited[n];
     bool* visited = (bool*) malloc(n * sizeof(int));
     int color = s;
 
@@ -68,8 +67,6 @@ void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
     }
 
     //Create a queue for bfs
-    if(queue->arr == 0)
-        printf("ERROR in queue array init");
     queuePush(queue, s);
 
     //Mark source vertex as visited
@@ -85,8 +82,6 @@ void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
         sccList->length++;
 
         //Get all the adjacent vertices of s and enqueue them if not visited
-        //TODO: store start index of each vertex from init
-        //int startIndex = getIndexOfValue(g->start, g->startLength, s);
         int startIndex = g->vertexPosInStart[s];
 
         //if vertex is a start of an edge
@@ -110,64 +105,4 @@ void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
     }
 
     free(visited);
-
-    //resizeArray(sccList->arr, sccList->length);
-
-    //printf("end bfs\n");
-}
-
-Array* cilkBfs(Graph* g, int s){
-    int n = g->verticesLength;
-    //For each vertex
-    bool visited[n];
-
-    //Mark all vertices as not visited
-    for(int i=0;i<n;i++){
-        visited[i] = false;
-    }
-
-    //Create a queue for bfs
-    Queue* queue = (Queue*) malloc(sizeof(Queue));
-    queueInit(queue, n);
-    queuePush(queue, s);
-
-    //Mark source vertex as visited
-    int indexOfVertex = getIndexOfValue(g->vertices, n, s);
-    visited[indexOfVertex] = true;
-
-    Array* sccList = (Array*) malloc(sizeof(Array));
-    sccList->arr = (int*) malloc(n * sizeof(int));
-    sccList->length = 0;
-
-    while(queue->qStart != queue->qEnd){
-        //Dequeue the first vertex from queue
-        s = queuePop(queue);
-
-        //Put the vertex id on the ssc list
-        sccList->arr[sccList->length] = s;
-        sccList->length++;
-
-        //Get all the adjacent vertices of s and enqueue them if not visited
-        int startIndex = getIndexOfValue(g->start, g->startLength, s);
-
-        //if vertex is a start of an edge
-        if(startIndex != -1){
-            int ifinish = startIndex + 1 < g->startPointerLength ? g->startPointer[startIndex+1] : g->endLength;
-
-            for(int endIndex=g->startPointer[startIndex];endIndex<ifinish;endIndex++){
-                indexOfVertex = getIndexOfValue(g->vertices, n, g->end[endIndex]);
-                if(indexOfVertex == -1){
-                    printf("Error: Vertex with id=%d not found\n", g->end[endIndex]);
-                    continue;
-                }
-
-                if(visited[indexOfVertex] == false){
-                    queuePush(queue, g->vertices[indexOfVertex]);
-                    visited[indexOfVertex] = true;
-                }
-            }
-        }
-    }
-
-    return sccList;
 }

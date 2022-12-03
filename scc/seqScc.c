@@ -165,6 +165,7 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
 
         //If the in-degree or out-degree is zero trim the vertex
         if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
+            g->sccIdOfVertex[i] = sccCounter;
             deleteIndexfromArray(g->vertices, i);
             sccCounter++;
             g->numOfVertices--;
@@ -181,6 +182,7 @@ Graph* initGraphFromCoo(CooArray* ca){
     g->endLength = ca->iLength;
 
     g->startAll = ca->j;
+    g->sccIdOfVertex = (int*) malloc(ca->numOfVertices * sizeof(int));
 
     //Malloc to size jLength because we dont know the final size
     g->start = (int*) malloc(ca->jLength * sizeof(int));
@@ -386,14 +388,14 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
 
         //Count SCCs found and delete from graph all vertices contained in a SCC
         if(scc->length > 0){
-            sccCounter++;
-
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
+                g->sccIdOfVertex[vid] = sccCounter;
                 deleteVertexFromGraph(g, vid);
                 g->numOfVertices--;
             }
+            sccCounter++;
         }
         else{
             printf("Error: Did not find any SCCs for color=%d!\n", color);
@@ -420,10 +422,6 @@ int sequentialColorScc(Graph* g, bool trimming){
         printf("ERROR in vertexColor malloc\n");
 
     while(g->numOfVertices > 0){
-        if(g->numOfVertices == 1){
-            sccCounter++;
-            break;
-        }
         if(g->numOfVertices < 1000) trimming = false;
 
         //Trim trvial SCCs to simplify the graph
@@ -452,6 +450,7 @@ int sequentialColorScc(Graph* g, bool trimming){
         free(uc);
     }
     free(vertexColor);
+    printf("NumOfVertices=%d\n", g->numOfVertices);
 
     return sccCounter;
 }

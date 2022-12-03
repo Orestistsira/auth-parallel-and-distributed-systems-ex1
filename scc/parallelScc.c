@@ -381,11 +381,6 @@ int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
         printf("ERROR in vertexColor malloc\n");
 
     while(g->numOfVertices > 0){
-        if(g->numOfVertices == 1){
-            parSccCounter++;
-            break;
-        }
-
         if(trimming){
             createThreadsForTrim(g);
         }

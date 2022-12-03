@@ -58,7 +58,6 @@ void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
     
     int n = g->verticesLength;
     //For each vertex
-    // bool visited[n];
     bool* visited = (bool*) malloc(n * sizeof(int));
     int color = s;
 
@@ -68,8 +67,6 @@ void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
     }
 
     //Create a queue for bfs
-    if(queue->arr == 0)
-        printf("ERROR in queue array init");
     queuePush(queue, s);
 
     //Mark source vertex as visited
@@ -85,8 +82,6 @@ void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
         sccList->length++;
 
         //Get all the adjacent vertices of s and enqueue them if not visited
-        //TODO: store start index of each vertex from init
-        //int startIndex = getIndexOfValue(g->start, g->startLength, s);
         int startIndex = g->vertexPosInStart[s];
 
         //if vertex is a start of an edge
@@ -110,8 +105,4 @@ void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
     }
 
     free(visited);
-
-    //resizeArray(sccList->arr, sccList->length);
-
-    //printf("end bfs\n");
 }

@@ -12,6 +12,8 @@ typedef struct CooArray{
     int numOfVertices;
 }CooArray;
 
+void printArray(int* array, int n);
+
 CooArray* readMtxFile(char* file);
 
 void calculateVertexDegrees(Graph* g, int startingVertex, int endingVertex);
