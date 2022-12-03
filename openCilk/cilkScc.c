@@ -91,9 +91,6 @@ CooArray* readMtxFile(char* filename){
 
         mm_write_banner(stdout, matcode);
         mm_write_mtx_crd_size(stdout, M, N, nz);
-        // for(i=0; i<nz; i++){
-        //     fprintf(stdout, "%d %d %20.19g\n", I[i]+1, J[i]+1, val[i]);
-        // }
     }
     else if(numOfCols == 2){
         //For unweighted graphs
@@ -109,9 +106,6 @@ CooArray* readMtxFile(char* filename){
 
         mm_write_banner(stdout, matcode);
         mm_write_mtx_crd_size(stdout, M, N, nz);
-        // for(i=0; i<nz; i++){
-        //     fprintf(stdout, "%d %d\n", I[i]+1, J[i]+1);
-        // }
     }
     else{
         printf("Error: Number of columns not 2 or 3!\n");
@@ -157,7 +151,6 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
         
         //If the in-degree or out-degree is zero trim the vertex
         if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
-            //printf("Trimming vertex: %d\n", vid);
             deleteIndexfromArray(g->vertices, i);
             pthread_mutex_lock(&mutex);
             sccTrimCounter++;
@@ -170,8 +163,6 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
 
     sccCounter += sccTrimCounter;
     g->numOfVertices -= sccTrimCounter;
-
-    //resizeArray(g->vertices, g->verticesLength);
 }
 
 //Initializes graph from a given COO array
@@ -238,8 +229,6 @@ void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVerte
         if(vid == -1 || color == 0){
             continue;
         }
-        
-        //int vid = g->vertices[i];
 
         int startIndex = g->vertexPosInStart[vid];
 
@@ -347,10 +336,7 @@ Array* findUniqueColors(int* vertexColor, int size){
 
     int* temp = copyArray(vertexColor, size);
 
-    //printArray(temp, size);
     mergeSort(temp, 0, size - 1);
-
-    //printArray(temp, size);
 
     for(int i=0;i<size;i++){
         int color = temp[i];
@@ -378,11 +364,7 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
     Queue* queueArr[endingColor - startingColor];
     Array* sccArr[endingColor - startingColor];
 
-    //TODO: make it cilk_for
     cilk_for(int i=startingColor;i<endingColor;i++){
-        // printf("Vertex Color: ");
-        // printArray(vertexColor, g->verticesLength);
-
         int color = uc->arr[i];
 
         Queue* queue = queueArr[i];
@@ -393,11 +375,8 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
         scc->arr = (int*) malloc(n * sizeof(int));
         scc->length = 0;
 
-        // printf("Color:%d\n", color);
-        //Find all vertexes with color and put them in vc
         bfs(g, color, vertexColor, queue, scc);
 
-        // printf("SccLength=%d", scc->length);
         //Count SCCs found and delete from graph all vertices contained in a SCC
         if(scc->length > 0){
             pthread_mutex_lock(&mutex);
