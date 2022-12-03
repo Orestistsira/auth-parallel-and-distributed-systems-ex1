@@ -4,9 +4,6 @@
 int sccCounter;
 bool changedColor;
 
-pthread_mutex_t mutex;
-pthread_mutex_t mutexDelVertex;
-
 //Returns a COO array from an mtx file
 CooArray* readMtxFile(char* filename){
     int ret_code;
@@ -428,10 +425,6 @@ int openmpColorScc(Graph* g, bool trimming){
     struct timeval startwtime, endwtime;
     double duration;
     sccCounter = 0;
-
-    //Initialize mutexes
-    pthread_mutex_init(&mutex, NULL);
-    pthread_mutex_init(&mutexDelVertex, NULL);
       
     //Init VertexColor array
     //Each Index corresponds to de vertices array and the value is the color of the vertex
@@ -466,10 +459,7 @@ int openmpColorScc(Graph* g, bool trimming){
         free(uc->arr);
         free(uc);
     }
-
     free(vertexColor);
 
-    pthread_mutex_destroy(&mutex);
-    pthread_mutex_destroy(&mutexDelVertex);
     return sccCounter;
 }
