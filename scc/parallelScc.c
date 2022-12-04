@@ -353,8 +353,6 @@ int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
     numOfThreads = givenNumOfThreads;
     printf("Number of threads=%d\n", numOfThreads);
     parSccCounter = 0;
- 
-    printf("NumOfVertices=%d\n", g->numOfVertices);
 
     //Initialize mutex
     pthread_mutex_init(&mutexAddScc, NULL);

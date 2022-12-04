@@ -405,8 +405,6 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
 
 int sequentialColorScc(Graph* g, bool trimming){
     sccCounter = 0;
-
-    printf("NumOfVertices=%d\n", g->numOfVertices);
     
     //Init VertexColor array
     //Each Index corresponds to thee vertices array and the value is the color of the vertex
@@ -445,7 +443,6 @@ int sequentialColorScc(Graph* g, bool trimming){
     }
 
     free(vertexColor);
-    printf("NumOfVertices=%d\n", g->numOfVertices);
 
     return sccCounter;
 }
