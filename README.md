@@ -1,6 +1,6 @@
 # auth-parallel-and-distributed-systems
 
-1. Directory scc
+1. Directory scc (cd scc)
 
 make
 
@@ -8,7 +8,7 @@ make
 
 ---
 
-2. Directory openCilk
+2. Directory openCilk (cd openCilk)
 
 make
 
@@ -16,7 +16,7 @@ make
 
 ---
 
-3. Directory openMP
+3. Directory openMP (cd openMP)
 
 make
 
