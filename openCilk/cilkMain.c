@@ -45,7 +45,7 @@ int main(int argc, char** argv){
 
     printf("[Result=%d]\n", numOfScc);
 
-    printf("[ColorScc took %.4f seconds]\n", duration);
+    printf("[CilkScc took %.4f seconds]\n", duration);
 
     //Clear graph
     free(g->sccIdOfVertex);
