@@ -8,6 +8,10 @@ clang from OpenCilk-2.0.0 ([Installation Guide](https://www.opencilk.org/doc/use
 
 ---
 
+**Do not skip any arguments unless it is noted**
+
+---
+
 1. To run sequential or Pthreads parallel algorithm 
 
 cd scc
