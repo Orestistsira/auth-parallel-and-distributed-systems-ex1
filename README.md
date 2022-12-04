@@ -20,6 +20,8 @@ make
 
 ./colorScc [graph-name] [trimming/no-trimming] [sequential/parallel] [number-of-threads]
 
+E.g. ./colorScc foldoc trimming parallel 8
+
 *--[number-of-threads] default = 4, can be skipped for sequential algorithm*
 
 ---
@@ -32,6 +34,8 @@ make
 
 [CILK_NWORKERS=N] ./cilkScc [graph-name] [trimming/no-trimming]
 
+E.g. ./cilkScc foldoc trimming
+
 *--[CILK_NWORKERS=N] can be skipped to set OpenCilk's default workers*
 
 ---
@@ -43,3 +47,5 @@ cd openMP
 make
 
 ./opempScc [graph-name] [trimming/no-trimming]
+
+E.g. ./openmpScc foldoc trimming
