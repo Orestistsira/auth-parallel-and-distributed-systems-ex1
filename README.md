@@ -32,6 +32,8 @@ make
 
 [CILK_NWORKERS=N] ./cilkScc [graph-name] [trimming/no-trimming]
 
+*[CILK_NWORKERS=N] can be skipped to set OpenCilk's default workers*
+
 ---
 
 3. To run parallel openMP algorithm
