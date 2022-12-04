@@ -27,37 +27,11 @@ int queuePop(Queue* queue){
     return val;
 }
 
-//Returns the index of a certain value in the given array
-int getIndexOfValue(int* array, int n, int value){
-    for(int i=0;i<n;i++){
-        if(array[i] == value){
-            return i;
-        }
-    }
-    //printf("Index for value %d not found\n", value);
-    return -1;
-}
-
-//Resizes array to a new given size
-void resizeArray(int* arr, int newSize){
-    int* temp = (int*) realloc(arr, newSize * sizeof(int));
-    arr = temp;
-}
-
-//Checks if value is not contained in the given array
-bool notInArray(int* arr, int size, int value){
-    for(int i=0;i<size;i++){
-        if(arr[i] == value)
-            return false;
-    }
-    return true;
-}
-
-//Returns an array with the vertex IDs contained in the SCC
+//Finds an array with the vertex IDs contained in the SCC
 void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
     
     int n = g->verticesLength;
-    //For each vertex
+    //Init visited array for each vertex
     bool* visited = (bool*) malloc(n * sizeof(int));
     int color = s;
 
@@ -66,7 +40,7 @@ void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList){
         visited[i] = false;
     }
 
-    //Create a queue for bfs
+    //Push source vertex to queue
     queuePush(queue, s);
 
     //Mark source vertex as visited

@@ -22,8 +22,11 @@ int main(int argc, char** argv){
         exit(1);
     }
 
+    //Read the mtx file
     printf("Loading graph...\n");
     CooArray* ca = readMtxFile(filename);
+
+    //Initialize the graph from the COO array
     printf("Initializing Graph...\n");
     Graph* g = initGraphFromCoo(ca);
     printf("Graph ready.\n");
@@ -44,6 +47,7 @@ int main(int argc, char** argv){
 
     printf("[ColorScc took %.4f seconds]\n", duration);
 
+    //Clear graph
     free(g->sccIdOfVertex);
     free(g->startAll);
     free(g->start);

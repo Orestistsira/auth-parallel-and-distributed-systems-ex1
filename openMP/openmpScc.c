@@ -65,11 +65,6 @@ CooArray* readMtxFile(char* filename){
     J = (int*) malloc(nz * sizeof(int));
     val = (double *) malloc(nz * sizeof(double));
 
-
-    /* NOTE: when reading in doubles, ANSI C requires the use of the "l"  */
-    /*   specifier as in "%lg", "%lf", "%le", otherwise errors will occur */
-    /*  (ANSI C X3.159-1989, Sec. 4.9.6.2, p. 136 lines 13-15)            */
-
     if(numOfCols == 3){
         //For weighted graphs
         for(i=0; i<nz; i++){
@@ -81,10 +76,6 @@ CooArray* readMtxFile(char* filename){
         }
 
         if (f !=stdin) fclose(f);
-
-        /************************/
-        /* now write out matrix */
-        /************************/
 
         mm_write_banner(stdout, matcode);
         mm_write_mtx_crd_size(stdout, M, N, nz);
@@ -122,6 +113,7 @@ CooArray* readMtxFile(char* filename){
 	return cooArray;
 }
 
+//Calculates degrees of each vertex
 void calculateVertexDegrees(Graph* g){
     //Find all vertices from the J (start) array
     #pragma omp parallel for
@@ -356,6 +348,7 @@ Array* findUniqueColors(int* vertexColor, int size){
     return uniqueColors;
 }
 
+//Finds the SCC for every unique color
 void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
     int sccUcCounter = 0;
     int sccNumOfVertices = 0;
@@ -407,25 +400,7 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
     g->numOfVertices -= sccNumOfVertices;
 }
 
-int sumOfArray(int* array, int size){
-    int sum = 0;
-    for(int i=0;i<size;i++){
-        sum += array[i];
-    }
-
-    return sum;
-}
-
-void printArray(int* array, int n){
-    for(int i=0;i<n;i++){
-        printf("%d ", array[i]);
-    }
-    printf("\n");
-}
-
 int openmpColorScc(Graph* g, bool trimming){
-    struct timeval startwtime, endwtime;
-    double duration;
     sccCounter = 0;
       
     //Init VertexColor array
@@ -447,8 +422,7 @@ int openmpColorScc(Graph* g, bool trimming){
         changedColor = true;
         while(changedColor){     
             changedColor = false;
-            
-            //Can be done in Parallel
+
             spreadColor(g, vertexColor, 0, n);
         }
 

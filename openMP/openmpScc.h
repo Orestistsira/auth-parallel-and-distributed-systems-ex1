@@ -15,8 +15,6 @@ typedef struct CooArray{
     int numOfVertices;
 }CooArray;
 
-bool notInArray(int* arr, int size, int value);
-
 CooArray* readMtxFile(char* file);
 
 Graph* initGraphFromCoo(CooArray* ca);
