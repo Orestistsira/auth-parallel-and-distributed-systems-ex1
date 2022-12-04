@@ -37,9 +37,6 @@ int main(int argc, char** argv){
         exit(1);
     }
 
-    if(parallel)
-        printf("Number of threads = %d\n", givenNumOfThreads);
-
     struct timeval startwtime, endwtime;
     double duration;
 
@@ -75,6 +72,7 @@ int main(int argc, char** argv){
 
     printf("[ColorScc took %.4f seconds]\n", duration);
 
+    //Clear graph
     free(g->sccIdOfVertex);
     free(g->startAll);
     free(g->start);

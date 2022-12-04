@@ -257,9 +257,6 @@ void* parAccessUniqueColors(void* args){
     int startingVertex = arguments->startIndex;
     int endingVertex = arguments->endIndex;
 
-    //int sccUcCounter = 0;
-    //int sccNumOfVertices = 0;
-
     int n = g->verticesLength;
     Queue* queue = (Queue*) malloc(sizeof(Queue));
     if(queue == NULL)
@@ -374,6 +371,7 @@ int parallelColorScc(Graph* g, bool trimming, int givenNumOfThreads){
         printf("ERROR in vertexColor malloc\n");
 
     while(g->numOfVertices > 0){
+        //Trim Graph
         if(trimming){
             createThreadsForTrim(g);
         }

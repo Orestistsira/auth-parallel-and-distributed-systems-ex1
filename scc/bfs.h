@@ -22,12 +22,4 @@ void queuePush(Queue* queue, int val);
 
 int queuePop(Queue* queue);
 
-int getIndexOfValue(int* array, int n, int value);
-
-void resizeArray(int* arr, int newSize);
-
-bool notInArray(int* arr, int size, int value);
-
-//Array* bfs(Graph* g, int s);
-
 void bfs(Graph* g, int s, int* vertexColor, Queue* queue, Array* sccList);

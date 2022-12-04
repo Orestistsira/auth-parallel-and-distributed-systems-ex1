@@ -85,11 +85,6 @@ CooArray* readMtxFile(char* filename){
     J = (int*) malloc(nz * sizeof(int));
     val = (double *) malloc(nz * sizeof(double));
 
-
-    /* NOTE: when reading in doubles, ANSI C requires the use of the "l"  */
-    /*   specifier as in "%lg", "%lf", "%le", otherwise errors will occur */
-    /*  (ANSI C X3.159-1989, Sec. 4.9.6.2, p. 136 lines 13-15)            */
-
     if(numOfCols == 3){
         //For weighted graphs
         for(i=0; i<nz; i++){
@@ -101,10 +96,6 @@ CooArray* readMtxFile(char* filename){
         }
 
         if (f !=stdin) fclose(f);
-
-        /************************/
-        /* now write out matrix */
-        /************************/
 
         mm_write_banner(stdout, matcode);
         mm_write_mtx_crd_size(stdout, M, N, nz);
@@ -141,6 +132,7 @@ CooArray* readMtxFile(char* filename){
 	return cooArray;
 }
 
+//Calculates degrees of each vertex
 void calculateVertexDegrees(Graph* g, int startingVertex, int endingVertex){
     for(int i=startingVertex;i<endingVertex;i++){
         int startId = g->startAll[i];
@@ -156,6 +148,7 @@ void calculateVertexDegrees(Graph* g, int startingVertex, int endingVertex){
     }
 }
 
+//Trim trivial SCCs
 void trimGraph(Graph* g, int startingVertex, int endingVertex){
     calculateVertexDegrees(g, 0, g->endLength);
 
@@ -176,6 +169,7 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
     }
 }
 
+//Init graph structure from the COO array
 Graph* initGraphFromCoo(CooArray* ca){
     Graph* g = (Graph*) malloc(sizeof(Graph));
     g->end = ca->i;
@@ -231,6 +225,7 @@ void initColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex)
     }    
 }
 
+//Spread the color of each vertex to make subgraphs with a certain color
 void spreadColor(Graph* g, int* vertexColor, int startingVertex, int endingVertex){
     for(int i=startingVertex;i<endingVertex;i++){
         int vid = g->vertices[i];
@@ -264,18 +259,17 @@ void merge(int arr[], int l, int m, int r){
 	int n1 = m - l + 1;
 	int n2 = r - m;
 
-	/* create temp arrays */
-	// int L[n1], R[n2];
+	// create temp arrays
     int* L = (int*) malloc(n1 * sizeof(int));
     int* R = (int*) malloc(n2 * sizeof(int));
 
-	/* Copy data to temp arrays L[] and R[] */
+	// Copy data to temp arrays L and R
 	for (i = 0; i < n1; i++)
 		L[i] = arr[l + i];
 	for (j = 0; j < n2; j++)
 		R[j] = arr[m + 1 + j];
 
-	/* Merge the temp arrays back into arr[l..r]*/
+	// Merge the temp arrays back into arr[l..r]
 	i = 0; // Initial index of first subarray
 	j = 0; // Initial index of second subarray
 	k = l; // Initial index of merged subarray
@@ -291,16 +285,14 @@ void merge(int arr[], int l, int m, int r){
 		k++;
 	}
 
-	/* Copy the remaining elements of L[], if there
-	are any */
+	// Copy the remaining elements of L, if there are any 
 	while (i < n1) {
 		arr[k] = L[i];
 		i++;
 		k++;
 	}
 
-	/* Copy the remaining elements of R[], if there
-	are any */
+	// Copy the remaining elements of R, if there are any
 	while (j < n2) {
 		arr[k] = R[j];
 		j++;
@@ -311,6 +303,7 @@ void merge(int arr[], int l, int m, int r){
     free(R);
 }
 
+//Sort an array with merge sort
 void mergeSort(int arr[], int l, int r){
 	if (l < r) {
 		// Same as (l+r)/2, but avoids overflow for
@@ -360,6 +353,7 @@ Array* findUniqueColors(int* vertexColor, int size){
     return uniqueColors;
 }
 
+//Find the SCC for every unique color
 void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
     int n = g->verticesLength;
     Queue* queue = (Queue*) malloc(sizeof(Queue));
