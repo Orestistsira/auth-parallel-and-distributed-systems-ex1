@@ -46,6 +46,6 @@ cd openMP
 
 make
 
-./opempScc [graph-name] [trimming/no-trimming]
+./openmpScc [graph-name] [trimming/no-trimming]
 
 E.g. ./openmpScc foldoc trimming
