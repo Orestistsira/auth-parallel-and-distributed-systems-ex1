@@ -22,19 +22,17 @@ int main(int argc, char** argv){
         exit(1);
     }
 
-    //ca = readMtxFile("graphs/celegansneural.mtx");
+    printf("Loading graph...\n");
     CooArray* ca = readMtxFile(filename);
-    //ca = readMtxFile("graphs/language.mtx");
-    //ca = readMtxFile("graphs/eu-2005.mtx");
     printf("Initializing Graph...\n");
     Graph* g = initGraphFromCoo(ca);
     printf("Graph ready.\n");
-    //printGraph(g);
 
     struct timeval startwtime, endwtime;
 
     gettimeofday (&startwtime, NULL);
 
+    printf("Starting parallel openMP algorithm...\n");
     int numOfScc = 0;
     numOfScc = openmpColorScc(g, trimming);
 
@@ -46,6 +44,7 @@ int main(int argc, char** argv){
 
     printf("[ColorScc took %.4f seconds]\n", duration);
 
+    free(g->sccIdOfVertex);
     free(g->startAll);
     free(g->start);
     free(g->startPointer);

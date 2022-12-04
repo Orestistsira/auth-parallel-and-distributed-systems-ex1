@@ -151,7 +151,7 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
             //If the in-degree or out-degree is zero trim the vertex
             if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
                 deleteIndexfromArray(g->vertices, i);
-                sccTrimCounter++;
+                g->sccIdOfVertex[i] = sccCounter + sccTrimCounter++;
             }
 
             g->inDegree[i] = 0;
@@ -169,6 +169,7 @@ Graph* initGraphFromCoo(CooArray* ca){
     g->endLength = ca->iLength;
 
     g->startAll = ca->j;
+    g->sccIdOfVertex = (int*) malloc(ca->numOfVertices * sizeof(int));
 
     //Malloc to size jLength because we dont know the final size
     g->start = (int*) malloc(ca->jLength * sizeof(int));
@@ -387,6 +388,7 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
                 //Delete each vertex with if found in scc
                 for(int j=0;j<scc->length;j++){
                     int vid = scc->arr[j];
+                    g->sccIdOfVertex[vid] = sccCounter + sccUcCounter - 1;
                     deleteVertexFromGraph(g, vid);
                 }
             }

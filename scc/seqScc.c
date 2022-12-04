@@ -449,6 +449,7 @@ int sequentialColorScc(Graph* g, bool trimming){
         free(uc->arr);
         free(uc);
     }
+
     free(vertexColor);
     printf("NumOfVertices=%d\n", g->numOfVertices);
 

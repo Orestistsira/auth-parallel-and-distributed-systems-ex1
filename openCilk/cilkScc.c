@@ -153,7 +153,7 @@ void trimGraph(Graph* g, int startingVertex, int endingVertex){
         if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
             deleteIndexfromArray(g->vertices, i);
             pthread_mutex_lock(&mutex);
-            sccTrimCounter++;
+            g->sccIdOfVertex[i] = sccCounter + sccTrimCounter++;
             pthread_mutex_unlock(&mutex);
         }
 
@@ -172,6 +172,7 @@ Graph* initGraphFromCoo(CooArray* ca){
     g->endLength = ca->iLength;
 
     g->startAll = ca->j;
+    g->sccIdOfVertex = (int*) malloc(ca->numOfVertices * sizeof(int));
 
     //Malloc to size jLength because we dont know the final size
     g->start = (int*) malloc(ca->jLength * sizeof(int));
@@ -379,6 +380,7 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
 
         //Count SCCs found and delete from graph all vertices contained in a SCC
         if(scc->length > 0){
+            //MUTEX
             pthread_mutex_lock(&mutex);
             sccUcCounter++;
             sccNumOfVertices += scc->length;
@@ -387,9 +389,9 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
+                g->sccIdOfVertex[vid] = sccCounter + sccUcCounter - 1;
                 deleteVertexFromGraph(g, vid);
             }
-
         }
         else{
             printf("Error: Did not find any SCCs for color=%d!\n", color);

@@ -41,8 +41,6 @@ void* parTrimGraph(void* args){
     int startingVertex = arguments->startIndex;
     int endingVertex = arguments->endIndex;
 
-    int sccTrimCounter = 0;
-
     //For every vertex ID in vertices array of graph 
     for(int i=startingVertex;i<endingVertex;i++){
         if(g->vertices[i] == -1) continue;
@@ -50,19 +48,16 @@ void* parTrimGraph(void* args){
         //If the in-degree or out-degree is zero trim the vertex
         if(g->inDegree[i] == 0 || g->outDegree[i] == 0){
             deleteIndexfromArray(g->vertices, i);
-            
-            sccTrimCounter++;
+
+            pthread_mutex_lock(&mutexAddScc);
+            g->sccIdOfVertex[i] = parSccCounter++;
+            g->numOfVertices--;
+            pthread_mutex_unlock(&mutexAddScc);
         }
 
         g->inDegree[i] = 0;
         g->outDegree[i] = 0;
-    }
-
-    //MUTEX
-    pthread_mutex_lock(&mutexAddScc);
-    parSccCounter += sccTrimCounter;
-    g->numOfVertices -= sccTrimCounter;
-    pthread_mutex_unlock(&mutexAddScc);
+    }    
 
 	pthread_exit(NULL);
 }
@@ -262,8 +257,8 @@ void* parAccessUniqueColors(void* args){
     int startingVertex = arguments->startIndex;
     int endingVertex = arguments->endIndex;
 
-    int sccUcCounter = 0;
-    int sccNumOfVertices = 0;
+    //int sccUcCounter = 0;
+    //int sccNumOfVertices = 0;
 
     int n = g->verticesLength;
     Queue* queue = (Queue*) malloc(sizeof(Queue));
@@ -292,15 +287,19 @@ void* parAccessUniqueColors(void* args){
 
         //Count SCCs found and delete from graph all vertices contained in a SCC
         if(scc->length > 0){
-            sccUcCounter++;
 
             //Delete each vertex with if found in scc
             for(int j=0;j<scc->length;j++){
                 int vid = scc->arr[j];
                 deleteVertexFromGraph(g, vid);
-            }
 
-            sccNumOfVertices += scc->length;
+                g->sccIdOfVertex[vid] = parSccCounter;
+            }
+            //MUTEX
+            pthread_mutex_lock(&mutexAddScc);
+            parSccCounter++;
+            g->numOfVertices -= scc->length;
+            pthread_mutex_unlock(&mutexAddScc);
         }
         else{
             printf("Error: Did not find any SCCs for color=%d!\n", color);
@@ -308,12 +307,6 @@ void* parAccessUniqueColors(void* args){
         }
 
     }
-
-    //MUTEX
-    pthread_mutex_lock(&mutexAddScc);
-    parSccCounter += sccUcCounter;
-    g->numOfVertices -= sccNumOfVertices;
-    pthread_mutex_unlock(&mutexAddScc);
 
     free(scc->arr);
     free(scc);

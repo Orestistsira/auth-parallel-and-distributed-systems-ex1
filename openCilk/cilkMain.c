@@ -22,6 +22,7 @@ int main(int argc, char** argv){
         exit(1);
     }
 
+    printf("Loading graph...\n");
     CooArray* ca = readMtxFile(filename);
     printf("Initializing Graph...\n");
     Graph* g = initGraphFromCoo(ca);
@@ -31,6 +32,7 @@ int main(int argc, char** argv){
 
     gettimeofday (&startwtime, NULL);
 
+    printf("Starting parallel openCilk algorithm...\n");
     int numOfScc = 0;
     numOfScc = cilkColorScc(g, trimming);
 
@@ -42,6 +44,7 @@ int main(int argc, char** argv){
 
     printf("[ColorScc took %.4f seconds]\n", duration);
 
+    free(g->sccIdOfVertex);
     free(g->startAll);
     free(g->start);
     free(g->startPointer);
