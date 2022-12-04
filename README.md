@@ -44,7 +44,7 @@ E.g. ./cilkScc foldoc trimming
 
 ---
 
-3. To run parallel openMP algorithm
+3. To run parallel OpenMP algorithm
 
 cd openMP
 
