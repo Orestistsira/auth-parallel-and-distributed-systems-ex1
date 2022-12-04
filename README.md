@@ -22,7 +22,7 @@ make
 
 E.g. ./colorScc foldoc trimming parallel 8
 
-*--[number-of-threads] default = 4, can be skipped for sequential algorithm*
+*--[number-of-threads] can be skipped, default = 4*
 
 ---
 
