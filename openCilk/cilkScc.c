@@ -68,11 +68,6 @@ CooArray* readMtxFile(char* filename){
     J = (int*) malloc(nz * sizeof(int));
     val = (double *) malloc(nz * sizeof(double));
 
-
-    /* NOTE: when reading in doubles, ANSI C requires the use of the "l"  */
-    /*   specifier as in "%lg", "%lf", "%le", otherwise errors will occur */
-    /*  (ANSI C X3.159-1989, Sec. 4.9.6.2, p. 136 lines 13-15)            */
-
     if(numOfCols == 3){
         //For weighted graphs
         for(i=0; i<nz; i++){
@@ -84,10 +79,6 @@ CooArray* readMtxFile(char* filename){
         }
 
         if (f !=stdin) fclose(f);
-
-        /************************/
-        /* now write out matrix */
-        /************************/
 
         mm_write_banner(stdout, matcode);
         mm_write_mtx_crd_size(stdout, M, N, nz);
@@ -125,6 +116,7 @@ CooArray* readMtxFile(char* filename){
 	return cooArray;
 }
 
+//Calculates degrees of each vertex
 void calculateVertexDegrees(Graph* g){
     //Find all vertices from the J (start) array
     cilk_for(int i=0;i<g->endLength;i++){
@@ -258,18 +250,17 @@ void merge(int arr[], int l, int m, int r){
 	int n1 = m - l + 1;
 	int n2 = r - m;
 
-	/* create temp arrays */
-	// int L[n1], R[n2];
+	// create temp arrays
     int* L = (int*) malloc(n1 * sizeof(int));
     int* R = (int*) malloc(n2 * sizeof(int));
 
-	/* Copy data to temp arrays L[] and R[] */
+	// Copy data to temp arrays L[] and R[]
 	for (i = 0; i < n1; i++)
 		L[i] = arr[l + i];
 	for (j = 0; j < n2; j++)
 		R[j] = arr[m + 1 + j];
 
-	/* Merge the temp arrays back into arr[l..r]*/
+	// Merge the temp arrays back into arr[l..r]
 	i = 0; // Initial index of first subarray
 	j = 0; // Initial index of second subarray
 	k = l; // Initial index of merged subarray
@@ -356,6 +347,7 @@ Array* findUniqueColors(int* vertexColor, int size){
     return uniqueColors;
 }
 
+//Find the SCC for every unique color
 void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor, int endingColor){
     int sccUcCounter = 0;
     int sccNumOfVertices = 0;
@@ -407,22 +399,6 @@ void accessUniqueColors(Graph* g, Array* uc, int* vertexColor, int startingColor
     sccCounter += sccUcCounter;
     g->numOfVertices -= sccNumOfVertices;
 
-}
-
-int sumOfArray(int* array, int size){
-    int sum = 0;
-    for(int i=0;i<size;i++){
-        sum += array[i];
-    }
-
-    return sum;
-}
-
-void printArray(int* array, int n){
-    for(int i=0;i<n;i++){
-        printf("%d ", array[i]);
-    }
-    printf("\n");
 }
 
 int cilkColorScc(Graph* g, bool trimming){

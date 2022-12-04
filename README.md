@@ -12,7 +12,11 @@ clang from OpenCilk-2.0.0 ([Installation Guide](https://www.opencilk.org/doc/use
 
 ---
 
-1. To run sequential or Pthreads parallel algorithm 
+0. Download ".mtx" graph files from [here](https://suitesparse-collection-website.herokuapp.com/) and put them in directory "graphs"
+
+---
+
+1. To run sequential or Pthreads parallel algorithm
 
 cd scc
 
