@@ -36,11 +36,15 @@ E.g. ./colorScc foldoc trimming parallel 8
 
 2. To run parallel OpenCilk algorithm
 
+```
+
 cd openCilk
 
 make
 
 [CILK_NWORKERS=N] ./cilkScc [graph-name] [trimming/no-trimming]
+
+```
 
 E.g. ./cilkScc foldoc trimming
 
@@ -50,10 +54,14 @@ E.g. ./cilkScc foldoc trimming
 
 3. To run parallel OpenMP algorithm
 
+```
+
 cd openMP
 
 make
 
 ./openmpScc [graph-name] [trimming/no-trimming]
+
+```
 
 E.g. ./openmpScc foldoc trimming
