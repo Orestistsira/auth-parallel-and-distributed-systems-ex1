@@ -18,11 +18,15 @@ clang from OpenCilk-2.0.0 ([Installation Guide](https://www.opencilk.org/doc/use
 
 1. To run sequential or Pthreads parallel algorithm
 
+```
+
 cd scc
 
 make
 
 ./colorScc [graph-name] [trimming/no-trimming] [sequential/parallel] [number-of-threads]
+
+```
 
 E.g. ./colorScc foldoc trimming parallel 8
 
